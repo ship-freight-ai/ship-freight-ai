@@ -1,0 +1,61 @@
+project_id = "ydihxjgsrqniluwzfbrq"
+
+[functions.create-connect-account]
+verify_jwt = true
+
+[functions.create-connect-onboarding-link]
+verify_jwt = true
+
+[functions.check-connect-status]
+verify_jwt = true
+
+[functions.create-carrier-payout]
+verify_jwt = true
+
+[functions.parse-load-document]
+verify_jwt = true
+
+[functions.send-contact-email]
+verify_jwt = false
+
+[functions.trucking-ai-demo]
+verify_jwt = false
+
+[functions.verify-signup-captcha]
+verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.confirm-payment]
+verify_jwt = true
+
+[functions.release-payment]
+verify_jwt = true
+
+[functions.dispute-payment]
+verify_jwt = true
+
+[functions.resolve-dispute]
+verify_jwt = true
+
+[functions.assign-user-role]
+verify_jwt = true
+
+[functions.get-all-users]
+verify_jwt = true
+
+[functions.expire-bids]
+verify_jwt = false
+
+[functions.auto-release-payments]
+verify_jwt = false
+
+[functions.seed-test-data]
+verify_jwt = false
+
+[functions.reset-test-data]
+verify_jwt = false
+
+[functions.seed-production-data]
+verify_jwt = false
