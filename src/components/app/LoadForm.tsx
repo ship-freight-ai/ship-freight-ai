@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { AddressAutocomplete } from "@/components/app/AddressAutocomplete";
 import { useCreateLoad, useUpdateLoad } from "@/hooks/useLoads";
 import type { Database } from "@/integrations/supabase/types";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Package, Snowflake, Truck, Box, Droplet, Hammer, Car, Pill, Flower2, Fish, Beef, Milk, Apple, ShoppingCart, Sofa, Zap, Wrench, Building2, Shirt, Newspaper, Wine, Cpu, Baby, Dog, Leaf, Cog, Factory, Container, CircleDollarSign } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 type EquipmentType = Database["public"]["Enums"]["equipment_type"];
@@ -51,67 +51,90 @@ interface LoadFormProps {
   isEditing?: boolean;
 }
 
-// Commodity options by equipment type
-const COMMODITY_OPTIONS = {
+// Commodity options with icons by equipment type
+const COMMODITY_OPTIONS: Record<string, Array<{ value: string; label: string; icon: React.ElementType }>> = {
   dry_van: [
-    "Dry Food",
-    "Beverages",
-    "Textiles",
-    "Electronics",
-    "Consumer Goods",
-    "Retail Products",
-    "Paper Products",
-    "Packaged Goods",
-    "Furniture",
-    "Automotive Parts",
+    { value: "General Merchandise", label: "General Merchandise", icon: ShoppingCart },
+    { value: "Building Materials", label: "Building Materials", icon: Building2 },
+    { value: "Auto Parts", label: "Auto Parts", icon: Car },
+    { value: "Electronics", label: "Electronics", icon: Cpu },
+    { value: "Consumer Goods", label: "Consumer Goods", icon: Package },
+    { value: "Retail Products", label: "Retail Products", icon: ShoppingCart },
+    { value: "Furniture", label: "Furniture", icon: Sofa },
+    { value: "Textiles & Apparel", label: "Textiles & Apparel", icon: Shirt },
+    { value: "Paper Products", label: "Paper Products", icon: Newspaper },
+    { value: "Beverages", label: "Beverages", icon: Wine },
+    { value: "Dry Food", label: "Dry Food", icon: Package },
+    { value: "Household Goods", label: "Household Goods", icon: Sofa },
+    { value: "Industrial Supplies", label: "Industrial Supplies", icon: Cog },
+    { value: "Hardware & Tools", label: "Hardware & Tools", icon: Wrench },
+    { value: "Baby Products", label: "Baby Products", icon: Baby },
+    { value: "Pet Supplies", label: "Pet Supplies", icon: Dog },
+    { value: "Packaged Goods", label: "Packaged Goods", icon: Box },
+    { value: "E-Commerce Freight", label: "E-Commerce Freight", icon: Package },
   ],
   reefer: [
-    "Fresh Produce",
-    "Frozen Foods",
-    "Dairy Products",
-    "Meat & Poultry",
-    "Seafood",
-    "Pharmaceuticals",
-    "Flowers",
-    "Temperature-Sensitive Chemicals",
+    { value: "Fresh Produce", label: "Fresh Produce", icon: Apple },
+    { value: "Frozen Foods", label: "Frozen Foods", icon: Snowflake },
+    { value: "Dairy Products", label: "Dairy Products", icon: Milk },
+    { value: "Meat & Poultry", label: "Meat & Poultry", icon: Beef },
+    { value: "Seafood", label: "Seafood", icon: Fish },
+    { value: "Pharmaceuticals", label: "Pharmaceuticals", icon: Pill },
+    { value: "Flowers & Plants", label: "Flowers & Plants", icon: Flower2 },
+    { value: "Beverages (Chilled)", label: "Beverages (Chilled)", icon: Wine },
+    { value: "Temperature-Sensitive Chemicals", label: "Temperature-Sensitive Chemicals", icon: Droplet },
+    { value: "Bakery Products", label: "Bakery Products", icon: Package },
+    { value: "Ice Cream", label: "Ice Cream", icon: Snowflake },
+    { value: "Organic Products", label: "Organic Products", icon: Leaf },
   ],
   flatbed: [
-    "Construction Materials",
-    "Steel Beams",
-    "Lumber",
-    "Machinery",
-    "Vehicles",
-    "Pipes",
-    "Building Supplies",
-    "Heavy Equipment",
+    { value: "Construction Materials", label: "Construction Materials", icon: Hammer },
+    { value: "Steel & Metals", label: "Steel & Metals", icon: Cog },
+    { value: "Lumber & Wood", label: "Lumber & Wood", icon: Building2 },
+    { value: "Machinery", label: "Machinery", icon: Factory },
+    { value: "Vehicles", label: "Vehicles", icon: Car },
+    { value: "Pipes & Tubing", label: "Pipes & Tubing", icon: Container },
+    { value: "Building Supplies", label: "Building Supplies", icon: Building2 },
+    { value: "Heavy Equipment", label: "Heavy Equipment", icon: Truck },
+    { value: "Roofing Materials", label: "Roofing Materials", icon: Building2 },
+    { value: "Concrete Products", label: "Concrete Products", icon: Box },
+    { value: "Farm Equipment", label: "Farm Equipment", icon: Leaf },
   ],
   step_deck: [
-    "Oversized Equipment",
-    "Industrial Machinery",
-    "Prefab Buildings",
-    "Large Vehicles",
-    "Construction Equipment",
+    { value: "Oversized Equipment", label: "Oversized Equipment", icon: Truck },
+    { value: "Industrial Machinery", label: "Industrial Machinery", icon: Factory },
+    { value: "Prefab Buildings", label: "Prefab Buildings", icon: Building2 },
+    { value: "Large Vehicles", label: "Large Vehicles", icon: Car },
+    { value: "Construction Equipment", label: "Construction Equipment", icon: Hammer },
+    { value: "Agricultural Equipment", label: "Agricultural Equipment", icon: Leaf },
   ],
   power_only: [
-    "Loaded Trailers",
-    "Pre-Loaded Equipment",
+    { value: "Loaded Trailers", label: "Loaded Trailers", icon: Container },
+    { value: "Pre-Loaded Equipment", label: "Pre-Loaded Equipment", icon: Truck },
+    { value: "Container Chassis", label: "Container Chassis", icon: Container },
   ],
   tanker: [
-    "Liquid Chemicals",
-    "Petroleum Products",
-    "Food Grade Liquids",
-    "Hazmat Liquids",
+    { value: "Liquid Chemicals", label: "Liquid Chemicals", icon: Droplet },
+    { value: "Petroleum Products", label: "Petroleum Products", icon: Droplet },
+    { value: "Food Grade Liquids", label: "Food Grade Liquids", icon: Droplet },
+    { value: "Hazmat Liquids", label: "Hazmat Liquids", icon: Zap },
+    { value: "Water", label: "Water", icon: Droplet },
+    { value: "Milk & Dairy Liquids", label: "Milk & Dairy Liquids", icon: Milk },
   ],
   box_truck: [
-    "Local Deliveries",
-    "Small Packages",
-    "Retail Goods",
-    "Retail Products",
+    { value: "Local Deliveries", label: "Local Deliveries", icon: Package },
+    { value: "Small Packages", label: "Small Packages", icon: Box },
+    { value: "Retail Goods", label: "Retail Goods", icon: ShoppingCart },
+    { value: "Office Supplies", label: "Office Supplies", icon: Package },
+    { value: "Residential Moving", label: "Residential Moving", icon: Sofa },
+    { value: "Medical Supplies", label: "Medical Supplies", icon: Pill },
   ],
   lowboy: [
-    "Heavy Machinery",
-    "Industrial Equipment",
-    "Construction Equipment",
+    { value: "Heavy Machinery", label: "Heavy Machinery", icon: Factory },
+    { value: "Industrial Equipment", label: "Industrial Equipment", icon: Cog },
+    { value: "Construction Equipment", label: "Construction Equipment", icon: Hammer },
+    { value: "Excavators", label: "Excavators", icon: Truck },
+    { value: "Bulldozers", label: "Bulldozers", icon: Truck },
   ],
 };
 
@@ -558,12 +581,18 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                         <SelectValue placeholder={equipmentType ? "Select commodity" : "Select equipment type first"} />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      {commodityOptions.map((commodity) => (
-                        <SelectItem key={commodity} value={commodity}>
-                          {commodity}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="max-h-[300px]">
+                      {commodityOptions.map((commodity) => {
+                        const Icon = commodity.icon;
+                        return (
+                          <SelectItem key={commodity.value} value={commodity.value}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4 text-primary" />
+                              <span>{commodity.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />
