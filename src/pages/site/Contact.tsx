@@ -92,31 +92,16 @@ export default function Contact() {
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
 
           {/* Contact Info */}
-          <div>
+          <div className="flex flex-col justify-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 mb-6">
               Get in Touch
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
               Have questions about Ship AI? Our team is here to help you optimize your freight operations.
             </p>
-
-            <div className="space-y-6">
-              <div className="glass-card p-6 rounded-xl border border-white/10 dark:border-white/5">
-                <h3 className="font-semibold text-foreground mb-2">Support</h3>
-                <p className="text-muted-foreground">support@shipai.com</p>
-                <p className="text-sm text-muted-foreground mt-1">+1 (800) 555-0123</p>
-              </div>
-
-              <div className="glass-card p-6 rounded-xl border border-white/10 dark:border-white/5">
-                <h3 className="font-semibold text-foreground mb-2">Sales</h3>
-                <p className="text-muted-foreground">sales@shipai.com</p>
-                <p className="text-sm text-muted-foreground mt-1 text-primary cursor-pointer hover:underline">
-                  Schedule a Demo &rarr;
-                </p>
-              </div>
-            </div>
-
-            {/* Trust Badges or decorative elements could go here */}
+            <p className="text-muted-foreground">
+              Fill out the form and we'll get back to you within 24 hours.
+            </p>
           </div>
 
           {/* Contact Form */}
@@ -198,10 +183,9 @@ export default function Contact() {
                 </div>
 
                 <div className="flex justify-center pt-2">
-                  {/* Test Site Key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI */}
                   <ReCAPTCHA
                     ref={recaptchaRef}
-                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                    sitekey="6LfytycsAAAAAI09TFU48gcTnPeN0kTQ9W92SUBq"
                     onChange={handleCaptchaChange}
                     theme="dark"
                   />
