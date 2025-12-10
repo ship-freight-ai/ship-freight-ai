@@ -528,7 +528,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                   <FormItem>
                     <FormLabel>Pickup Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" min={new Date().toISOString().split('T')[0]} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -541,7 +541,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                   <FormItem>
                     <FormLabel>Delivery Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" min={new Date().toISOString().split('T')[0]} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
