@@ -18,12 +18,13 @@ import { RatingDialog } from "@/components/app/RatingDialog";
 import { useLoadRating } from "@/hooks/useRatings";
 import { useGenerateLoadPDF, useDocuments } from "@/hooks/useDocuments";
 import { generateLoadConfirmationPDF, generateBOLPDF, generateInvoicePDF } from "@/utils/pdfGenerator";
-import { MapPin, Calendar, Package, DollarSign, FileText, Gavel, Edit, Send, Star, Download, MessageSquare, EyeOff, ShieldCheck } from "lucide-react";
+import { MapPin, Calendar, Package, DollarSign, FileText, Gavel, Edit, Send, Star, Download, MessageSquare, EyeOff, ShieldCheck, Truck, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 function LoadDetailsContent() {
   const { loadId } = useParams<{ loadId: string }>();
@@ -145,10 +146,19 @@ function LoadDetailsContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-96 w-full" />
+      <div className="space-y-6">
+        <Skeleton className="h-6 w-32" />
+        <div className="flex justify-between items-start">
+          <div>
+            <Skeleton className="h-10 w-64 mb-2" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="grid gap-6">
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -158,11 +168,17 @@ function LoadDetailsContent() {
     return (
       <div className="space-y-6">
         <BackButton to="/app/loads" label="Back to Loads" />
-        <Card className="p-12 text-center">
+        <Card className="border-border/50 p-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+            <Package className="w-10 h-10 text-muted-foreground" />
+          </div>
           <h2 className="text-2xl font-bold mb-2">Load not found</h2>
           <p className="text-muted-foreground mb-6">
             The load you're looking for doesn't exist or you don't have access to it.
           </p>
+          <Button variant="outline" onClick={() => navigate("/app/loads")}>
+            Back to All Loads
+          </Button>
         </Card>
       </div>
     );
@@ -172,12 +188,25 @@ function LoadDetailsContent() {
     <div className="space-y-6">
       <BackButton to="/app/loads" label="Back to Loads" />
 
-      <div className="flex items-start justify-between">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row items-start justify-between gap-4"
+      >
         <div>
-          <h1 className="text-3xl font-bold mb-2">Load Details</h1>
-          <p className="text-muted-foreground">
-            Load #{load.load_number || load.id.slice(0, 8)}
-          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Truck className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Load #{load.load_number || load.id.slice(0, 8)}
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            {load.origin_city}, {load.origin_state}
+            <ArrowRight className="w-6 h-6 text-muted-foreground" />
+            {load.destination_city}, {load.destination_state}
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           <LoadStatusBadge status={load.status} />
@@ -273,10 +302,15 @@ function LoadDetailsContent() {
             </Button>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid gap-6">
-        <Card className="p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid gap-6"
+      >
+        <Card className="border-border/50 p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
             Route Information
@@ -396,7 +430,7 @@ function LoadDetailsContent() {
         )}
 
         {load.posted_rate && (
-          <Card className="p-6">
+          <Card className="border-border/50 p-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-primary" />
               Rate Information
@@ -456,7 +490,7 @@ function LoadDetailsContent() {
             isCarrier={isCarrier}
           />
         )}
-      </div>
+      </motion.div>
 
       {/* Rating Dialog */}
       {load && load.carrier_id && (
