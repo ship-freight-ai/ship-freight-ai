@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Truck } from "lucide-react";
+import { Package, Truck, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+
 
 
 // Accept any valid email address (personal or business)
@@ -28,6 +29,7 @@ export default function SiteAuth() {
   const [selectedRole, setSelectedRole] = useState<'shipper' | 'carrier' | null>(mode === 'login' ? 'shipper' : null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -323,15 +325,25 @@ export default function SiteAuth() {
 
                   <div className="space-y-4">
                     <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-white/50 dark:bg-black/50 border-black/10 dark:border-white/10 h-11 focus:border-primary/50 transition-colors text-foreground"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-white/50 dark:bg-black/50 border-black/10 dark:border-white/10 h-11 focus:border-primary/50 transition-colors text-foreground pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {isSignUp && (
