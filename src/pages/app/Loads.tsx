@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
 function AppLoadsContent() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(0);
@@ -52,6 +54,16 @@ function AppLoadsContent() {
 
   const isShipper = profile?.role === "shipper";
   const isCarrier = profile?.role === "carrier";
+
+  // Auto-open dialog when coming from dashboard with ?new=true
+  useEffect(() => {
+    if (searchParams.get("new") === "true" && isShipper) {
+      setDialogOpen(true);
+      // Clear the query param so refreshing doesn't reopen
+      searchParams.delete("new");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, isShipper]);
 
   const activeFilterCount = Object.values(filters).filter(v => v !== undefined && v !== "").length;
 

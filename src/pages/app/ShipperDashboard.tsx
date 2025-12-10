@@ -63,7 +63,7 @@ export default function ShipperDashboard() {
           </p>
         </div>
         <Button
-          onClick={() => navigate("/app/loads/new")}
+          onClick={() => navigate("/app/loads?new=true")}
           id="create-load-btn"
           size="lg"
           className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
@@ -205,7 +205,7 @@ export default function ShipperDashboard() {
                 <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                   Create your first load to start connecting with carriers and moving freight
                 </p>
-                <Button onClick={() => navigate("/app/loads/new")} size="lg">
+                <Button onClick={() => navigate("/app/loads?new=true")} size="lg">
                   <Plus className="mr-2 h-5 w-5" />
                   Create Your First Load
                 </Button>
