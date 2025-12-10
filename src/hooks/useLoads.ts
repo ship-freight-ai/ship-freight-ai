@@ -153,6 +153,7 @@ export const useCreateLoad = () => {
       toast({
         title: "Success",
         description: "Load created successfully",
+        variant: "success",
       });
     },
     onError: (error) => {
@@ -186,6 +187,7 @@ export const useUpdateLoad = (loadId: string) => {
       toast({
         title: "Success",
         description: "Load updated successfully",
+        variant: "success",
       });
     },
     onError: (error) => {
@@ -211,6 +213,7 @@ export const useDeleteLoad = () => {
       toast({
         title: "Success",
         description: "Load deleted successfully",
+        variant: "success",
       });
     },
     onError: (error) => {
@@ -244,6 +247,7 @@ export const useUpdateLoadStatus = (loadId: string) => {
       toast({
         title: "Success",
         description: "Load status updated successfully",
+        variant: "success",
       });
     },
     onError: (error) => {
