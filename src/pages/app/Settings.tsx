@@ -9,9 +9,11 @@ import { useProfile, useUpdateProfile, useUpdateEmail, useUpdatePassword } from 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Bell, Lock, Settings } from "lucide-react";
+import { User, Bell, Lock, Settings, Users } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { TeamManagement } from "@/components/app/TeamManagement";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,6 +41,7 @@ const notificationsSchema = z.object({
 
 export default function AppSettings() {
   const { data: profile, isLoading } = useProfile();
+  const { subscription } = useSubscription();
   const updateProfile = useUpdateProfile();
   const updateEmail = useUpdateEmail();
   const updatePassword = useUpdatePassword();
@@ -130,10 +133,14 @@ export default function AppSettings() {
         transition={{ delay: 0.1 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="profile">
               <User className="w-4 h-4 mr-2" />
               Profile
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <Users className="w-4 h-4 mr-2" />
+              Team
             </TabsTrigger>
             <TabsTrigger value="account">
               <Lock className="w-4 h-4 mr-2" />
@@ -189,6 +196,10 @@ export default function AppSettings() {
                 </Form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="team" className="mt-6">
+            <TeamManagement />
           </TabsContent>
 
           <TabsContent value="account" className="mt-6 space-y-6">

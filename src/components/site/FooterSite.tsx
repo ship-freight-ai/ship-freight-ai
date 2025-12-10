@@ -1,6 +1,19 @@
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Linkedin, Twitter, Github, Mail } from "lucide-react";
+import { Linkedin, Github, Mail } from "lucide-react";
+
+// X Icon as SVG since it might not be in the constrained lucide version or for precise styling
+// X Icon as SVG (Standard X logo)
+const XIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+);
 
 export const FooterSite = () => {
   return (
@@ -18,18 +31,18 @@ export const FooterSite = () => {
             </p>
             {/* Social Links */}
             <div className="flex items-center gap-3">
-              <a href="https://twitter.com/shipfreightai" target="_blank" rel="noopener noreferrer"
+              <a href="https://x.com/ship_freight_ai?s=11" target="_blank" rel="noopener noreferrer"
                 className="p-2.5 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all">
-                <Twitter className="w-4 h-4" />
+                <XIcon className="w-4 h-4" />
               </a>
-              <a href="https://linkedin.com/company/shipfreightai" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.linkedin.com/company/ship-ai/" target="_blank" rel="noopener noreferrer"
                 className="p-2.5 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="mailto:hello@shipfreight.ai"
+              <Link to="/site/contact"
                 className="p-2.5 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all">
                 <Mail className="w-4 h-4" />
-              </a>
+              </Link>
             </div>
           </div>
 

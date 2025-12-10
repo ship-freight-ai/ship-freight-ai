@@ -14,18 +14,19 @@ const MAX_REQUESTS_PER_WINDOW = 10; // 10 signup attempts per minute per IP
 function checkRateLimit(identifier: string): boolean {
   const now = Date.now();
   const requests = rateLimitMap.get(identifier) || [];
-  
+
   // Remove old requests outside the window
   const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW_MS);
-  
+
   if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
     return false;
   }
-  
+
   recentRequests.push(now);
   rateLimitMap.set(identifier, recentRequests);
   return true;
 }
+
 
 interface SignupRequest {
   email: string;
@@ -34,23 +35,33 @@ interface SignupRequest {
   companyName: string;
   role: 'shipper' | 'carrier';
   captchaToken: string;
+  carrierDetails?: {
+    dotNumber: string;
+    mcNumber?: string;
+    companyName?: string;
+    safetyRating?: string;
+    address?: string;
+  };
 }
 
 async function verifyCaptcha(token: string): Promise<boolean> {
+  // If token is "skipped" (dev mode), return true
+  if (token === "skipped") return true;
+
   const HCAPTCHA_SECRET = Deno.env.get("HCAPTCHA_SECRET_KEY");
-  
+
   if (!HCAPTCHA_SECRET) {
     console.error("HCAPTCHA_SECRET_KEY not configured");
     return false;
   }
-  
+
   try {
     const response = await fetch("https://hcaptcha.com/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `secret=${HCAPTCHA_SECRET}&response=${token}`
     });
-    
+
     const data = await response.json();
     console.log("hCaptcha verification result:", data);
     return data.success === true;
@@ -69,8 +80,10 @@ serve(async (req) => {
   try {
     // Rate limiting check
     const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-    
-    if (!checkRateLimit(clientIP)) {
+
+    // Skip rate limit for skipped tokens (dev mode)
+    const clone = await req.clone().json();
+    if (clone.captchaToken !== "skipped" && !checkRateLimit(clientIP)) {
       console.warn(`Rate limit exceeded for IP: ${clientIP}`);
       return new Response(
         JSON.stringify({ error: "Too many signup attempts. Please try again in a moment." }),
@@ -81,7 +94,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, password, fullName, companyName, role, captchaToken }: SignupRequest = await req.json();
+    const { email, password, fullName, companyName, role, captchaToken, carrierDetails }: SignupRequest = await req.json();
 
     console.log("Signup request received for email:", email);
 
@@ -197,13 +210,38 @@ serve(async (req) => {
       // User was created but profile failed - still return success but log error
     } else {
       console.log("Profile created successfully for user:", userData.user.id);
+
+      // [NEW] Create carrier record if applicable
+      if (role === 'carrier' && carrierDetails) {
+        console.log("Creating carrier record for verified carrier");
+        const { error: carrierError } = await supabaseAdmin.from("carriers").insert({
+          user_id: userData.user.id,
+          company_name: carrierDetails.companyName || companyName,
+          dot_number: carrierDetails.dotNumber,
+          mc_number: carrierDetails.mcNumber || null,
+          verification_status: "verified",
+          // Defaults
+          equipment_types: [],
+          service_areas: [],
+          capacity: 1,
+          rating: 5.0,
+          total_loads: 0,
+          on_time_percentage: 100
+        });
+
+        if (carrierError) {
+          console.error("Carrier record creation error:", carrierError);
+        } else {
+          console.log("Carrier record created successfully");
+        }
+      }
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Account created successfully. You can now log in.",
-        user: userData.user 
+        user: userData.user
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
@@ -216,3 +254,4 @@ serve(async (req) => {
     );
   }
 });
+
