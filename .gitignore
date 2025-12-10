@@ -1,3 +1,11 @@
+# Environment variables - NEVER commit these!
+.env
+.env.local
+.env.production
+.env.development
+.env*.local
+.env.backup*
+
 # Logs
 logs
 *.log
