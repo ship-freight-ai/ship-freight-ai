@@ -1,30 +1,29 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
+import React from "react"; // Added React import for React.ElementType
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
-  iconColor?: string;
-  description?: string;
-  variant?: "default" | "destructive";
+  icon: React.ElementType; // Changed from LucideIcon to React.ElementType
   trend?: {
     value: number;
     isPositive: boolean;
   };
+  className?: string; // Added className prop
+  id?: string; // Added id prop
 }
 
-export default function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  iconColor = "text-primary",
-  description,
-  variant = "default",
-  trend 
+export default function StatCard({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  className, // Destructured className
+  id // Destructured id
 }: StatCardProps) {
   return (
-    <Card>
+    <Card className={className} id={id}> {/* Passed className and id to Card */}
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">

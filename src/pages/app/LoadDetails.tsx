@@ -18,7 +18,7 @@ import { RatingDialog } from "@/components/app/RatingDialog";
 import { useLoadRating } from "@/hooks/useRatings";
 import { useGenerateLoadPDF, useDocuments } from "@/hooks/useDocuments";
 import { generateLoadConfirmationPDF, generateBOLPDF, generateInvoicePDF } from "@/utils/pdfGenerator";
-import { MapPin, Calendar, Package, DollarSign, FileText, Gavel, Edit, Send, Star, Download } from "lucide-react";
+import { MapPin, Calendar, Package, DollarSign, FileText, Gavel, Edit, Send, Star, Download, MessageSquare, EyeOff, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,19 +43,25 @@ function LoadDetailsContent() {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      
+
       const { data } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, user_id")
         .eq("user_id", user.id)
         .single();
-      
+
       return data;
     },
   });
 
   const isShipper = profile?.role === "shipper";
   const isCarrier = profile?.role === "carrier";
+  // Cast load to any to access new fields for now
+  const safeLoad = load as any;
+  const isOwner = profile?.user_id === load?.shipper_id;
+  const isBookedCarrier = isCarrier && load?.carrier_id === profile?.user_id && ["booked", "in_transit", "completed"].includes(load?.status || "");
+  const canViewPickupRef = isOwner || isBookedCarrier;
+
   const canBid = isCarrier && load && ["posted", "bidding"].includes(load.status);
   const canRateCarrier = isShipper && load?.status === "completed" && load?.carrier_id && !existingRating;
 
@@ -175,6 +181,18 @@ function LoadDetailsContent() {
         </div>
         <div className="flex items-center gap-3">
           <LoadStatusBadge status={load.status} />
+          {safeLoad?.is_public === false && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border">
+              <EyeOff className="w-3 h-3" />
+              Private
+            </div>
+          )}
+          {safeLoad?.requires_eld && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+              <ShieldCheck className="w-3 h-3" />
+              ELD Required
+            </div>
+          )}
           {isShipper && load.status === "draft" && (
             <>
               <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -188,8 +206,8 @@ function LoadDetailsContent() {
                   <DialogHeader>
                     <DialogTitle>Edit Load</DialogTitle>
                   </DialogHeader>
-                  <LoadForm 
-                    onSuccess={() => setEditDialogOpen(false)} 
+                  <LoadForm
+                    onSuccess={() => setEditDialogOpen(false)}
                     initialData={load}
                     loadId={load.id}
                     isEditing={true}
@@ -204,24 +222,24 @@ function LoadDetailsContent() {
           )}
           {load.status !== "draft" && load.status !== "posted" && load.carrier_id && (
             <>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => handleDownloadPDF('confirmation')}
                 disabled={isPDFGenerating}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Confirmation
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => handleDownloadPDF('bol')}
                 disabled={isPDFGenerating}
               >
                 <FileText className="w-4 h-4 mr-2" />
                 BOL
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => handleDownloadPDF('invoice')}
                 disabled={isPDFGenerating}
               >
@@ -246,191 +264,210 @@ function LoadDetailsContent() {
           {isShipper && (
             <LoadDeleteDialog onConfirm={handleDelete} isDeleting={isDeleting} />
           )}
+          {isCarrier && (
+            <Button
+              onClick={() => window.location.href = `/app/messages?loadId=${load.id}&userId=${load.shipper_id}`}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Message Shipper
+            </Button>
+          )}
         </div>
       </div>
 
       <div className="grid gap-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Route Information
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">ORIGIN</h3>
-                {load.origin_facility_name && (
-                  <p className="font-semibold text-primary mb-1">{load.origin_facility_name}</p>
-                )}
-                <p className="font-medium">{load.origin_address}</p>
-                <p>{load.origin_city}, {load.origin_state} {load.origin_zip}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">DESTINATION</h3>
-                {load.destination_facility_name && (
-                  <p className="font-semibold text-primary mb-1">{load.destination_facility_name}</p>
-                )}
-                <p className="font-medium">{load.destination_address}</p>
-                <p>{load.destination_city}, {load.destination_state} {load.destination_zip}</p>
-              </div>
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Route Information
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">ORIGIN</h3>
+              {load.origin_facility_name && (
+                <p className="font-semibold text-primary mb-1">{load.origin_facility_name}</p>
+              )}
+              <p className="font-medium">{load.origin_address}</p>
+              <p>{load.origin_city}, {load.origin_state} {load.origin_zip}</p>
             </div>
-            {load.distance_miles && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Total Distance: <span className="font-semibold text-foreground">{load.distance_miles} miles</span>
-                </p>
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">DESTINATION</h3>
+              {load.destination_facility_name && (
+                <p className="font-semibold text-primary mb-1">{load.destination_facility_name}</p>
+              )}
+              <p className="font-medium">{load.destination_address}</p>
+              <p>{load.destination_city}, {load.destination_state} {load.destination_zip}</p>
+            </div>
+          </div>
+          {canViewPickupRef && safeLoad?.pickup_ref && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm font-medium text-muted-foreground mb-1">Pickup Reference</p>
+              <p className="font-mono text-base font-semibold bg-muted py-1 px-2 rounded inline-block">
+                {safeLoad.pickup_ref}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <EyeOff className="w-3 h-3" /> Visible only to shipper and booked carrier
+              </p>
+            </div>
+          )}
+          {load.distance_miles && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Total Distance: <span className="font-semibold text-foreground">{load.distance_miles} miles</span>
+              </p>
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            Schedule
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">PICKUP DATE</h3>
+              <p className="font-medium">{format(new Date(load.pickup_date), "EEEE, MMMM dd, yyyy")}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">DELIVERY DATE</h3>
+              <p className="font-medium">{format(new Date(load.delivery_date), "EEEE, MMMM dd, yyyy")}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
+            Load Details
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-sm text-muted-foreground mb-1">Equipment Type</h3>
+              <p className="font-medium capitalize">{load.equipment_type.replace("_", " ")}</p>
+            </div>
+            {load.weight && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Weight</h3>
+                <p className="font-medium">{load.weight.toLocaleString()} lbs</p>
               </div>
             )}
-          </Card>
+            {load.length && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Length</h3>
+                <p className="font-medium">{load.length} ft</p>
+              </div>
+            )}
+            {load.width && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Width</h3>
+                <p className="font-medium">{load.width} ft</p>
+              </div>
+            )}
+            {load.height && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Height</h3>
+                <p className="font-medium">{load.height} ft</p>
+              </div>
+            )}
+            {load.commodity && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Commodity</h3>
+                <p className="font-medium">{load.commodity}</p>
+              </div>
+            )}
+            {load.temperature_min !== null && load.temperature_max !== null && (
+              <div>
+                <h3 className="text-sm text-muted-foreground mb-1">Temperature Range</h3>
+                <p className="font-medium">{load.temperature_min}°F to {load.temperature_max}°F</p>
+              </div>
+            )}
+          </div>
+        </Card>
 
+        {load.special_requirements && (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Schedule
+              <FileText className="w-5 h-5 text-primary" />
+              Special Requirements
             </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">PICKUP DATE</h3>
-                <p className="font-medium">{format(new Date(load.pickup_date), "EEEE, MMMM dd, yyyy")}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">DELIVERY DATE</h3>
-                <p className="font-medium">{format(new Date(load.delivery_date), "EEEE, MMMM dd, yyyy")}</p>
-              </div>
-            </div>
+            <p className="text-muted-foreground">{load.special_requirements}</p>
           </Card>
+        )}
 
+        {load.posted_rate && (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              Load Details
+              <DollarSign className="w-5 h-5 text-primary" />
+              Rate Information
             </h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm text-muted-foreground mb-1">Equipment Type</h3>
-                <p className="font-medium capitalize">{load.equipment_type.replace("_", " ")}</p>
-              </div>
-              {load.weight && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Weight</h3>
-                  <p className="font-medium">{load.weight.toLocaleString()} lbs</p>
-                </div>
-              )}
-              {load.length && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Length</h3>
-                  <p className="font-medium">{load.length} ft</p>
-                </div>
-              )}
-              {load.width && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Width</h3>
-                  <p className="font-medium">{load.width} ft</p>
-                </div>
-              )}
-              {load.height && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Height</h3>
-                  <p className="font-medium">{load.height} ft</p>
-                </div>
-              )}
-              {load.commodity && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Commodity</h3>
-                  <p className="font-medium">{load.commodity}</p>
-                </div>
-              )}
-              {load.temperature_min !== null && load.temperature_max !== null && (
-                <div>
-                  <h3 className="text-sm text-muted-foreground mb-1">Temperature Range</h3>
-                  <p className="font-medium">{load.temperature_min}°F to {load.temperature_max}°F</p>
-                </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold">${load.posted_rate.toLocaleString()}</span>
+              {load.distance_miles && (
+                <span className="text-muted-foreground">
+                  (${(load.posted_rate / load.distance_miles).toFixed(2)}/mile)
+                </span>
               )}
             </div>
           </Card>
+        )}
 
-          {load.special_requirements && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Special Requirements
-              </h2>
-              <p className="text-muted-foreground">{load.special_requirements}</p>
-            </Card>
-          )}
+        {/* Bidding Section */}
+        {(canBid || (isShipper && ["bidding", "booked"].includes(load.status))) && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <Gavel className="w-5 h-5 text-primary" />
+              Bidding
+            </h2>
 
-          {load.posted_rate && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                Rate Information
-              </h2>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">${load.posted_rate.toLocaleString()}</span>
-                {load.distance_miles && (
-                  <span className="text-muted-foreground">
-                    (${(load.posted_rate / load.distance_miles).toFixed(2)}/mile)
-                  </span>
-                )}
-              </div>
-            </Card>
-          )}
+            <Tabs defaultValue={canBid ? "submit" : "bids"}>
+              <TabsList className="grid w-full grid-cols-2">
+                {canBid && <TabsTrigger value="submit">Submit Bid</TabsTrigger>}
+                <TabsTrigger value="bids">
+                  {isShipper ? "Manage Bids" : "View Bids"}
+                </TabsTrigger>
+              </TabsList>
 
-          {/* Bidding Section */}
-          {(canBid || (isShipper && ["bidding", "booked"].includes(load.status))) && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                <Gavel className="w-5 h-5 text-primary" />
-                Bidding
-              </h2>
-
-              <Tabs defaultValue={canBid ? "submit" : "bids"}>
-                <TabsList className="grid w-full grid-cols-2">
-                  {canBid && <TabsTrigger value="submit">Submit Bid</TabsTrigger>}
-                  <TabsTrigger value="bids">
-                    {isShipper ? "Manage Bids" : "View Bids"}
-                  </TabsTrigger>
-                </TabsList>
-
-                {canBid && (
-                  <TabsContent value="submit" className="mt-6">
-                    <div className="max-w-md">
-                      <BidForm
-                        loadId={load.id}
-                        postedRate={load.posted_rate || undefined}
-                        onSuccess={() => setBidDialogOpen(false)}
-                      />
-                    </div>
-                  </TabsContent>
-                )}
-
-                <TabsContent value="bids" className="mt-6">
-                  <BidsList loadId={load.id} isShipper={isShipper} />
+              {canBid && (
+                <TabsContent value="submit" className="mt-6">
+                  <div className="max-w-md">
+                    <BidForm
+                      loadId={load.id}
+                      postedRate={load.posted_rate || undefined}
+                      onSuccess={() => setBidDialogOpen(false)}
+                    />
+                  </div>
                 </TabsContent>
-              </Tabs>
-            </Card>
-          )}
+              )}
 
-          {/* Payment Section */}
-          {load.status !== "draft" && load.status !== "posted" && (
-            <PaymentEscrow
-              loadId={load.id}
-              loadStatus={load.status}
-              isShipper={isShipper}
-              isCarrier={isCarrier}
-            />
-          )}
-        </div>
+              <TabsContent value="bids" className="mt-6">
+                <BidsList loadId={load.id} isShipper={isShipper} />
+              </TabsContent>
+            </Tabs>
+          </Card>
+        )}
 
-        {/* Rating Dialog */}
-        {load && load.carrier_id && (
-          <RatingDialog
-            open={ratingDialogOpen}
-            onOpenChange={setRatingDialogOpen}
+        {/* Payment Section */}
+        {load.status !== "draft" && load.status !== "posted" && (
+          <PaymentEscrow
             loadId={load.id}
-            carrierId={load.carrier_id}
-            carrierName="Carrier"
+            loadStatus={load.status}
+            isShipper={isShipper}
+            isCarrier={isCarrier}
           />
         )}
+      </div>
+
+      {/* Rating Dialog */}
+      {load && load.carrier_id && (
+        <RatingDialog
+          open={ratingDialogOpen}
+          onOpenChange={setRatingDialogOpen}
+          loadId={load.id}
+          carrierId={load.carrier_id}
+          carrierName="Carrier"
+        />
+      )}
     </div>
   );
 }

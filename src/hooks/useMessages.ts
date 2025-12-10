@@ -40,15 +40,15 @@ export const useLoadMessages = (loadId: string | null) => {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*", // Listen to all events (INSERT, UPDATE)
           schema: "public",
           table: "messages",
           filter: `load_id=eq.${loadId}`,
         },
-        (payload) => {
-          console.log("New message received:", payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ["messages", loadId] });
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
         }
       )
       .subscribe();
@@ -57,6 +57,54 @@ export const useLoadMessages = (loadId: string | null) => {
       supabase.removeChannel(channel);
     };
   }, [loadId, queryClient]);
+
+  return query;
+};
+
+export const useUnreadMessages = () => {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["unread-messages"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 0;
+
+      const { count, error } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .eq("read", false);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    // Refresh every minute if no realtime event triggers
+    refetchInterval: 60000,
+  });
+
+  // Global subscription for unread count
+  useEffect(() => {
+    const channel = supabase
+      .channel("global-messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          // Ideally check if receiver_id matches, but for now just refetch
+          queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   return query;
 };
@@ -95,15 +143,15 @@ export const useConversations = (page: number = 1, pageSize: number = 20) => {
 
       // Group by load and get the latest message for each
       const conversationsMap = new Map();
-      
+
       messages?.forEach((msg: any) => {
         if (!msg.load_id || conversationsMap.has(msg.load_id)) return;
-        
+
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         const unreadCount = messages.filter(
-          (m: any) => m.load_id === msg.load_id && 
-                      m.receiver_id === user.id && 
-                      !m.read
+          (m: any) => m.load_id === msg.load_id &&
+            m.receiver_id === user.id &&
+            !m.read
         ).length;
 
         conversationsMap.set(msg.load_id, {

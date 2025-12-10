@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowLeft } from "lucide-react";
@@ -11,8 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 function AppMessagesContent() {
-  const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
-  const [receiverId, setReceiverId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedLoadId, setSelectedLoadId] = useState<string | null>(searchParams.get("loadId"));
+  const [receiverId, setReceiverId] = useState<string | null>(searchParams.get("userId"));
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: conversationsData, isLoading: loadingConversations } = useConversations(currentPage, 20);

@@ -46,7 +46,7 @@ serve(async (req) => {
 
     // Get raw body for signature verification
     const body = await req.text();
-    
+
     // Verify webhook signature
     let event: Stripe.Event;
     try {
@@ -73,9 +73,9 @@ serve(async (req) => {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        logStep("Processing subscription event", { 
+        logStep("Processing subscription event", {
           subscriptionId: subscription.id,
-          status: subscription.status 
+          status: subscription.status
         });
 
         // Get customer email
@@ -178,11 +178,101 @@ serve(async (req) => {
 
       case "customer.subscription.trial_will_end": {
         const subscription = event.data.object as Stripe.Subscription;
-        logStep("Trial ending soon", { 
+        logStep("Trial ending soon", {
           subscriptionId: subscription.id,
-          trialEnd: subscription.trial_end 
+          trialEnd: subscription.trial_end
         });
         // You could send an email notification here
+        break;
+      }
+
+      case "payment_intent.amount_capturable_updated": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const { load_id, bid_id, carrier_id } = paymentIntent.metadata;
+
+        logStep("Processing payment capturable update", {
+          paymentIntentId: paymentIntent.id,
+          metadata: paymentIntent.metadata
+        });
+
+        if (load_id && bid_id && paymentIntent.status === 'requires_capture') {
+          // 1. Update Payment Record to 'held_in_escrow'
+          // Check if payment exists first to avoid duplicate inserts if possible, or update
+          const { error: paymentError } = await supabaseClient
+            .from("payments")
+            .update({
+              status: 'held_in_escrow',
+              escrow_held_at: new Date().toISOString(),
+              stripe_payment_intent_id: paymentIntent.id
+            })
+            .eq('load_id', load_id)
+            .eq('status', 'pending'); // Only update if pending
+
+          if (paymentError) logStep("Error updating payment", { error: paymentError });
+
+          // 2. Reject other bids
+          await supabaseClient
+            .from("bids")
+            .update({ status: "rejected" })
+            .eq("load_id", load_id)
+            .neq("id", bid_id);
+
+          // 3. Accept winning bid
+          await supabaseClient
+            .from("bids")
+            .update({ status: "accepted" })
+            .eq("id", bid_id);
+
+          // 4. Update Load status to 'booked'
+          const { error: loadError } = await supabaseClient
+            .from("loads")
+            .update({
+              status: "booked",
+              carrier_id: carrier_id
+            })
+            .eq("id", load_id);
+
+          if (loadError) {
+            logStep("Error updating load status", { error: loadError });
+            throw loadError;
+          }
+
+          logStep("Load successfully booked via webhook", { loadId: load_id });
+        }
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        logStep("Processing payment success", {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount_received
+        });
+
+        // Ensure payment is marked as released/completed
+        const { error: updateError } = await supabaseClient
+          .from("payments")
+          .update({
+            status: 'released',
+            released_at: new Date().toISOString(), // Use current time if missed
+            final_amount: paymentIntent.amount_received / 100 // Store actual captured amount
+          })
+          .eq('stripe_payment_intent_id', paymentIntent.id)
+          .neq('status', 'released'); // Only if not already released
+
+        if (updateError) {
+          logStep("Error updating payment on success", { error: updateError });
+        } else {
+          // Also ensure load is completed
+          const { load_id } = paymentIntent.metadata;
+          if (load_id) {
+            await supabaseClient
+              .from("loads")
+              .update({ status: 'completed' })
+              .eq('id', load_id)
+              .neq('status', 'completed');
+          }
+        }
         break;
       }
 

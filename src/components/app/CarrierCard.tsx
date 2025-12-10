@@ -1,18 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Truck, Shield } from "lucide-react";
-import { CarrierRatingBadge } from "@/components/app/CarrierRatingBadge";
-import type { Database } from "@/integrations/supabase/types";
-
-type Carrier = Database["public"]["Tables"]["carriers"]["Row"];
+import { Building2, Truck, Shield, MapPin, Star } from "lucide-react";
+import type { CarrierProfile } from "@/data/mockCarriers";
 
 interface CarrierCardProps {
-  carrier: Carrier;
+  carrier: CarrierProfile;
 }
 
 export function CarrierCard({ carrier }: CarrierCardProps) {
   return (
-    <Card className="p-6 hover:shadow-lg transition-shadow">
+    <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -21,59 +18,62 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           <div>
             <h3 className="font-semibold text-lg mb-1">{carrier.company_name}</h3>
             <div className="flex items-center gap-2 mb-2">
-              {carrier.verification_status === "verified" && (
-                <Badge variant="default" className="text-xs">
+              {carrier.verified && (
+                <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">
                   <Shield className="w-3 h-3 mr-1" />
                   Verified
                 </Badge>
               )}
+              <Badge variant="outline" className="text-xs">
+                DOT {carrier.dot_number}
+              </Badge>
             </div>
-            <CarrierRatingBadge
-              rating={carrier.rating}
-              totalLoads={carrier.total_loads}
-              onTimePercentage={carrier.on_time_percentage}
-              variant="compact"
-            />
+            <div className="flex items-center gap-1 text-sm text-yellow-500">
+              <Star className="w-4 h-4 fill-current" />
+              <span className="font-bold">{carrier.rating}</span>
+              <span className="text-muted-foreground">({carrier.reviews_count} reviews)</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm">
-          <Truck className="w-4 h-4 text-muted-foreground" />
-          <span>{carrier.capacity} trucks</span>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Truck className="w-4 h-4 text-muted-foreground" />
+            <span>{carrier.fleet_size} Trucks</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground" />
+            <span>{carrier.city}, {carrier.state}</span>
+          </div>
         </div>
 
         <div>
           <p className="text-xs text-muted-foreground mb-2">Equipment Types:</p>
           <div className="flex flex-wrap gap-1">
             {carrier.equipment_types.slice(0, 3).map((type) => (
-              <Badge key={type} variant="outline" className="text-xs">
+              <Badge key={type} variant="secondary" className="text-xs">
                 {type.replace("_", " ")}
               </Badge>
             ))}
             {carrier.equipment_types.length > 3 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="secondary" className="text-xs">
                 +{carrier.equipment_types.length - 3}
               </Badge>
             )}
           </div>
         </div>
 
-        {carrier.service_areas && carrier.service_areas.length > 0 && (
+        {carrier.lanes && carrier.lanes.length > 0 && (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Service Areas:</p>
-            <div className="flex flex-wrap gap-1">
-              {carrier.service_areas.slice(0, 5).map((area) => (
-                <Badge key={area} variant="secondary" className="text-xs">
-                  {area}
+            <p className="text-xs text-muted-foreground mb-2">Primary Lanes:</p>
+            <div className="flex flex-wrap gap-2">
+              {carrier.lanes.slice(0, 2).map((lane, idx) => (
+                <Badge key={idx} variant="outline" className="text-xs font-normal">
+                  {lane.origin} → {lane.dest}
                 </Badge>
               ))}
-              {carrier.service_areas.length > 5 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{carrier.service_areas.length - 5}
-                </Badge>
-              )}
             </div>
           </div>
         )}

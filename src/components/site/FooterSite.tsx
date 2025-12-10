@@ -20,7 +20,7 @@ export const FooterSite = () => {
             <h3 className="font-semibold mb-4">Product</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/site/pricing" className="text-muted-foreground hover:text-accent transition-colors">
+                <Link to="/site/privacy" className="text-muted-foreground hover:text-primary transition-colors">
                   Pricing
                 </Link>
               </li>

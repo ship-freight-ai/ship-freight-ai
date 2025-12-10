@@ -60,9 +60,25 @@ serve(async (req) => {
       throw new Error("Invite has expired");
     }
 
+    // Check available seats on the invite
     const availableSeats = invite.seats_allocated - invite.seats_claimed;
     if (availableSeats < 1) {
       throw new Error("No seats available on this invite");
+    }
+
+    // Check available seats on the subscription (global limit)
+    const subscription = invite.subscriptions;
+    if (!subscription) {
+      throw new Error("Subscription not found for this invite");
+    }
+
+    // Check if subscription is active
+    if (!['active', 'trialing'].includes(subscription.status)) {
+      throw new Error("The organization's subscription is not active");
+    }
+
+    if ((subscription.seats_used || 0) >= (subscription.seats || 0)) {
+      throw new Error("The organization has reached its maximum seat limit. The owner must add more seats.");
     }
 
     // Check if user already has a subscription

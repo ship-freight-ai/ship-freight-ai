@@ -11,21 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Zap, DollarSign, CheckCircle2, TrendingUp, Clock, FileText, MessageSquare, BarChart3, Link as LinkIcon, Star, Sparkles } from "lucide-react";
+import awsLogo from "@/assets/partners/aws.png";
+import googleLogo from "@/assets/partners/google.png";
+import nvidiaLogo from "@/assets/partners/nvidia.png";
+import microsoftLogo from "@/assets/partners/microsoft.png";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-const partnerLogos = [{
-  name: "NVIDIA Inception",
-  width: 140
-}, {
-  name: "Microsoft Founders Hub",
-  width: 140
-}, {
-  name: "Google for Startups",
-  width: 140
-}, {
-  name: "AWS Activate",
-  width: 120
-}];
+const partnerLogos = [
+  { name: "NVIDIA Inception", logo: nvidiaLogo, className: "h-24" },
+  { name: "Microsoft Founders Hub", logo: microsoftLogo, className: "h-24" },
+  { name: "Google for Startups", logo: googleLogo, className: "h-36" }, // Bigger
+  { name: "AWS Activate", logo: awsLogo, className: "h-24" }
+];
 export default function SiteHome() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,12 +59,14 @@ export default function SiteHome() {
     <NavSite />
 
     {/* Hero Section */}
-    <section className="relative pt-40 pb-28 overflow-hidden">
-      <div className="absolute inset-0 mesh-gradient-bg opacity-30" />
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-fuchsia-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+    <section className="relative pt-40 pb-28 overflow-hidden min-h-[90vh] flex items-center justify-center bg-background transition-colors duration-300">
+      {/* Background Effects - Deep Void Style (Dark) & Platinum Grid (Light) */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" />
+
+      {/* Spotlight Effect */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50" />
+
       <div className="container mx-auto px-6 relative z-10">
         <motion.div initial={{
           opacity: 0,
@@ -78,59 +77,63 @@ export default function SiteHome() {
         }} transition={{
           duration: 0.5
         }} className="text-center max-w-5xl mx-auto">
-          <Badge variant="outline" className="mb-8 text-sm border-accent/40 bg-accent/10 hover:bg-accent/20 transition-all shimmer">
-            <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
-            AI-Powered Freight Intelligence
+          <Badge variant="outline" className="mb-8 px-4 py-1.5 text-sm rounded-full border-primary/30 bg-primary/5 text-primary backdrop-blur-sm shadow-[0_0_15px_-3px_rgba(124,58,237,0.3)] animate-in fade-in zoom-in duration-500">
+            <Sparkles className="w-3.5 h-3.5 mr-2 text-primary animate-pulse" />
+            <span className="font-medium">Next-Gen Freight Intelligence</span>
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight fade-in-up">
-            <span className="text-gradient">Ditch Freight Brokerages</span>
+          <h1 className="text-6xl md:text-8xl font-bold mb-8 leading-tight tracking-tight fade-in-up text-foreground">
+            <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground/90 to-foreground/50 dark:from-white dark:via-white/90 dark:to-white/50">Ditch Brokerages.</span>
             <br />
-            <span className="text-foreground">Automate Operations</span>
-            <br />
-            <span className="text-gradient">Match Freight Instantly</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-secondary animate-gradient-x">Automate Freight.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 fade-in-up-delay-1 max-w-3xl mx-auto">You don't need a 3PL, cut the middleman, manage spot & contract freight, track assets in real time, handle billing & gain insights.</p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center fade-in-up-delay-2">
-            <Button variant="default" size="xl" asChild className="shimmer glow-effect hover:scale-105 transition-all bg-primary hover:bg-primary/90">
-              <Link to="/site/auth?mode=signup">Get started free</Link>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-12 fade-in-up-delay-1 max-w-3xl mx-auto leading-relaxed">
+            Eliminate the middleman. Connect directly with enterprise shippers and unified assets in a <span className="text-foreground font-semibold">single chaotic-free dashboard</span>.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center fade-in-up-delay-2">
+            <Button variant="default" size="xl" asChild className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_-5px_rgba(124,58,237,0.4)] hover:shadow-[0_0_40px_-5px_rgba(124,58,237,0.6)] transition-all duration-300">
+              <Link to="/site/auth?mode=signup">Start Free Trial <span className="ml-2 font-mono text-xs opacity-70">→</span></Link>
             </Button>
-            <Button variant="glass" size="xl" asChild className="hover:scale-105 transition-all">
-              <Link to="/site/roi-calculator">Calculate your savings</Link>
+            <Button variant="outline" size="xl" asChild className="h-14 px-8 text-lg rounded-full border-border/50 bg-background/50 hover:bg-background/80 hover:text-foreground text-foreground transition-all backdrop-blur-sm shadow-sm dark:shadow-none dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white dark:text-gray-300">
+              <Link to="/site/roi-calculator">Calculate Savings</Link>
             </Button>
           </div>
         </motion.div>
 
-        {/* Partner Logos */}
-        <motion.div initial={{
-          opacity: 0
-        }} animate={{
-          opacity: 1
-        }} transition={{
-          delay: 0.3,
-          duration: 0.5
-        }} className="mt-24">
+        {/* Partner Logos Carousel */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.5 }} className="mt-24 w-full overflow-hidden">
           <p className="text-center text-base text-muted-foreground mb-10 font-semibold">
             🏢 Backed by industry leaders
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-16">
-            {partnerLogos.map((logo, i) => <motion.div key={i} initial={{
-              opacity: 0,
-              scale: 0.8
-            }} animate={{
-              opacity: 1,
-              scale: 1
-            }} transition={{
-              delay: 0.4 + i * 0.1
-            }} className="glass-card px-8 py-5 rounded-xl hover:scale-110 transition-transform">
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-accent fill-accent" />
-                <span className="text-foreground font-semibold" style={{
-                  width: logo.width
-                }}>
-                  {logo.name}
-                </span>
+
+          <div className="relative flex overflow-hidden w-full mask-gradient-x">
+            {/* Gradient Masks */}
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10"></div>
+
+            <div className="flex w-max animate-scroll">
+              <div className="flex shrink-0 items-center justify-around gap-8 min-w-full px-12">
+                {partnerLogos.map((logo, i) => (
+                  <div key={`set1-${i}`} className="flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300">
+                    <img
+                      src={logo.logo}
+                      alt={logo.name}
+                      className={`${logo.className || "h-24"} w-auto object-contain max-w-[200px]`}
+                    />
+                  </div>
+                ))}
               </div>
-            </motion.div>)}
+              <div className="flex shrink-0 items-center justify-around gap-8 min-w-full px-12">
+                {partnerLogos.map((logo, i) => (
+                  <div key={`set2-${i}`} className="flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300">
+                    <img
+                      src={logo.logo}
+                      alt={logo.name}
+                      className={`${logo.className || "h-24"} w-auto object-contain max-w-[200px]`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>

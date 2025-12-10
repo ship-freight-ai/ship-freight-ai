@@ -63,13 +63,15 @@ export const useCreatePaymentIntent = () => {
       loadId,
       amount,
       carrierId,
+      bidId,
     }: {
       loadId: string;
       amount: number;
       carrierId: string;
+      bidId: string;
     }) => {
       const { data, error } = await supabase.functions.invoke("create-payment-intent", {
-        body: { loadId, amount, carrierId },
+        body: { loadId, amount, carrierId, bidId },
       });
 
       if (error) throw error;
@@ -92,12 +94,14 @@ export const useConfirmPayment = () => {
     mutationFn: async ({
       paymentIntentId,
       loadId,
+      bidId,
     }: {
       paymentIntentId: string;
       loadId: string;
+      bidId: string;
     }) => {
       const { data, error } = await supabase.functions.invoke("confirm-payment", {
-        body: { paymentIntentId, loadId },
+        body: { paymentIntentId, loadId, bidId },
       });
 
       if (error) throw error;
@@ -105,6 +109,9 @@ export const useConfirmPayment = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payment"] });
+      // Invalidate both load and bids since booking updates both
+      queryClient.invalidateQueries({ queryKey: ["loads"] });
+      queryClient.invalidateQueries({ queryKey: ["bids"] });
       toast.success("Payment confirmed and held in escrow");
     },
     onError: (error: Error) => {
@@ -117,9 +124,17 @@ export const useReleasePayment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (loadId: string) => {
+    mutationFn: async ({
+      loadId,
+      finalAmount,
+      notes
+    }: {
+      loadId: string;
+      finalAmount?: number;
+      notes?: string;
+    }) => {
       const { data, error } = await supabase.functions.invoke("release-payment", {
-        body: { loadId },
+        body: { loadId, finalAmount, notes },
       });
 
       if (error) throw error;

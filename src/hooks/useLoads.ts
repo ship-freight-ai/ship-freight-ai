@@ -64,55 +64,28 @@ export const useLoadsList = (role?: "shipper" | "carrier", filters?: LoadFilters
     },
   });
 
-  // Subscribe to real-time updates with role-based filtering
+  // Subscribe to real-time updates
   useEffect(() => {
-    if (!supabase) return;
-
-    const setupSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get user profile to determine role
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
-
-      const userRole = profile?.role;
-
-      // Only subscribe to relevant load changes based on role
-      const channel = supabase
-        .channel("loads-changes")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "loads",
-            // For carriers: only posted/bidding loads
-            // For shippers: only their own loads
-            filter: userRole === 'carrier' 
-              ? "status=in.(posted,bidding)" 
-              : `shipper_id=eq.${user.id}`
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: ["loads"] });
-          }
-        )
-        .subscribe();
-
-      return channel;
-    };
-
-    let channelPromise = setupSubscription();
+    const channel = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "loads",
+        },
+        () => {
+          // Invalidate all loads queries to ensure fresh data
+          queryClient.invalidateQueries({ queryKey: ["loads"] });
+        }
+      )
+      .subscribe();
 
     return () => {
-      channelPromise.then(channel => {
-        if (channel) supabase.removeChannel(channel);
-      });
+      supabase.removeChannel(channel);
     };
-  }, [queryClient, role]);
+  }, [queryClient]);
 
   return query;
 };

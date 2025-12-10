@@ -13,10 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { paymentIntentId, loadId } = await req.json();
+    const { paymentIntentId, loadId, bidId } = await req.json();
 
-    if (!paymentIntentId || !loadId) {
-      throw new Error("Missing required fields");
+    if (!paymentIntentId || !loadId || !bidId) {
+      throw new Error("Missing required fields (paymentIntentId, loadId, bidId)");
     }
 
     // Initialize Stripe
@@ -55,14 +55,23 @@ serve(async (req) => {
     }
 
     // Confirm the payment intent (capture later)
-    const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId);
+    // Note: In client-side flow, it might already be confirmed. 
+    // We check status first.
+    let paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    if (paymentIntent.status !== "requires_capture") {
-      throw new Error("Payment confirmation failed");
+    if (paymentIntent.status === 'requires_confirmation') {
+      paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId);
+    }
+
+    if (paymentIntent.status !== "requires_capture" && paymentIntent.status !== "succeeded") {
+      // succeeded covers cases where capture_method is manual but it might have auto-captured (though we set manual)
+      // or if it was already authorized.
+      // Ideally "requires_capture" for auth/capture flow.
+      throw new Error(`Payment status is ${paymentIntent.status}, expected requires_capture`);
     }
 
     // Update payment status to held in escrow
-    const { error: updateError } = await supabase
+    const { error: updatePaymentError } = await supabase
       .from("payments")
       .update({
         status: "held_in_escrow",
@@ -70,10 +79,39 @@ serve(async (req) => {
       })
       .eq("id", payment.id);
 
-    if (updateError) {
-      console.error("Update error:", updateError);
+    if (updatePaymentError) {
       throw new Error("Failed to update payment status");
     }
+
+    // --- ATOMIC BOOKING LOGIC ---
+
+    // 1. Mark Bid as Accepted
+    const { error: bidError } = await supabase
+      .from("bids")
+      .update({ status: "accepted" })
+      .eq("id", bidId);
+
+    if (bidError) throw new Error("Failed to accept bid: " + bidError.message);
+
+    // 2. Reject other bids
+    await supabase
+      .from("bids")
+      .update({ status: "rejected" })
+      .eq("load_id", loadId)
+      .neq("id", bidId)
+      .eq("status", "pending");
+
+    // 3. Mark Load as Booked & Assign Carrier
+    // We need the carrier_id from the bid (or payment)
+    const { error: loadError } = await supabase
+      .from("loads")
+      .update({
+        status: "booked", // Important: This reveals pickup_ref
+        carrier_id: payment.carrier_id
+      })
+      .eq("id", loadId);
+
+    if (loadError) throw new Error("Failed to update load status: " + loadError.message);
 
     return new Response(
       JSON.stringify({

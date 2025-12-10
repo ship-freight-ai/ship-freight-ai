@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Package, TruckIcon, FileText, DollarSign, Plus, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { OnboardingTour, TourStep } from "@/components/ui/onboarding-tour";
 import { useLoadsList } from "@/hooks/useLoads";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useUserPayments } from "@/hooks/usePayments";
@@ -9,12 +10,33 @@ import { motion } from "framer-motion";
 import StatCard from "@/components/app/analytics/StatCard";
 import { LoadCard } from "@/components/app/LoadCard";
 
+const tourSteps: TourStep[] = [
+  {
+    targetId: "create-load-btn",
+    title: "Post Your First Load",
+    content: "Click here to create a new shipment requirement. You'll specify origin, destination, and freight details.",
+    position: "bottom"
+  },
+  {
+    targetId: "active-loads-card",
+    title: "Track Active Loads",
+    content: "Monitor your ongoing shipments here. You'll see real-time status updates from carriers.",
+    position: "right"
+  },
+  {
+    targetId: "ai-insights-card",
+    title: "AI Insights",
+    content: "Get predictive analytics and market rate suggestions powered by our AI engine.",
+    position: "left"
+  }
+];
+
 export default function ShipperDashboard() {
   const navigate = useNavigate();
   const { data: loadsData } = useLoadsList("shipper");
   const { data: documents } = useDocuments();
   const { data: payments } = useUserPayments();
-  
+
   const loads = loadsData?.data || [];
 
   const activeLoads = loads.filter(l => l.status === "in_transit" || l.status === "booked");
@@ -25,18 +47,23 @@ export default function ShipperDashboard() {
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-3xl font-bold">Shipper Dashboard</h1>
-        <p className="text-muted-foreground">Manage your shipments and track performance</p>
-      </motion.div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Shipper Dashboard</h1>
+          <p className="text-muted-foreground">Manage your shipments and track performance</p>
+        </div>
+        <Button onClick={() => navigate("/app/loads/new")} id="create-load-btn">
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Load
+        </Button>
+      </div>
+
+      <OnboardingTour tourId="shipper-dashboard-v1" steps={tourSteps} />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
+          id="active-loads-card"
           title="Active Loads"
           value={activeLoads.length}
           icon={Package}
@@ -53,6 +80,7 @@ export default function ShipperDashboard() {
           icon={FileText}
         />
         <StatCard
+          id="ai-insights-card"
           title="Total Spent"
           value={`$${totalSpent.toLocaleString()}`}
           icon={DollarSign}

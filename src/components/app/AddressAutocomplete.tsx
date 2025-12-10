@@ -134,7 +134,7 @@ export function AddressAutocomplete({
     try {
       const request: google.maps.places.AutocompletionRequest = {
         input,
-        componentRestrictions: { country: "us" },
+        componentRestrictions: { country: ["us", "ca", "mx"] },
         sessionToken: sessionTokenRef.current!,
       };
 
@@ -315,20 +315,29 @@ export function AddressAutocomplete({
   const dropdown = showDropdown && suggestions.length > 0 && createPortal(
     <div
       ref={dropdownRef}
+      className="bg-popover border border-border rounded-lg shadow-2xl overflow-y-auto max-h-[300px] overscroll-contain"
+      onMouseDown={(e) => {
+        // Prevent input blur when interacting with the dropdown (including scrollbar)
+        e.preventDefault();
+      }}
       style={{
         position: 'fixed',
         top: dropdownPosition.top,
         left: dropdownPosition.left,
         width: dropdownPosition.width,
         zIndex: 99999,
+        pointerEvents: 'auto' // Ensure clicks work in modals
       }}
-      className="bg-popover border border-border rounded-lg shadow-2xl overflow-hidden"
     >
       {suggestions.map((suggestion, index) => (
         <button
           key={suggestion.placeId}
           type="button"
-          onClick={() => selectPlace(suggestion)}
+          onMouseDown={(e) => {
+            // Prevent input blur which would close the dropdown before selection
+            e.preventDefault();
+            selectPlace(suggestion);
+          }}
           onMouseEnter={() => setSelectedIndex(index)}
           className={cn(
             "w-full px-4 py-3 flex items-start gap-3 text-left transition-colors",
@@ -338,7 +347,7 @@ export function AddressAutocomplete({
         >
           <div className="flex-shrink-0 mt-0.5">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-primary" />
+              {suggestion.placeId ? <MapPin className="w-4 h-4 text-primary" /> : <Building2 className="w-4 h-4 text-primary" />}
             </div>
           </div>
           <div className="flex-1 min-w-0">

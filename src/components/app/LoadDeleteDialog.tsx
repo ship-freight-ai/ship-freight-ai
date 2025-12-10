@@ -7,6 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -20,12 +21,14 @@ interface LoadDeleteDialogProps {
 export function LoadDeleteDialog({ onConfirm, isDeleting, trigger }: LoadDeleteDialogProps) {
   return (
     <AlertDialog>
-      {trigger || (
-        <Button variant="destructive" size="sm">
-          <Trash2 className="w-4 h-4 mr-2" />
-          Delete Load
-        </Button>
-      )}
+      <AlertDialogTrigger asChild>
+        {trigger || (
+          <Button variant="destructive" size="sm">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Load
+          </Button>
+        )}
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>

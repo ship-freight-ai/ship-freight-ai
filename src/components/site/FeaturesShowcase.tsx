@@ -109,7 +109,7 @@ export const FeaturesShowcase = () => {
         once: true
       }} className="text-center mb-16">
         <Badge variant="outline" className="mb-4 px-4 py-2 text-sm font-medium border-accent/30 bg-accent/5">
-          <Star className="w-4 h-4 mr-2 inline text-accent fill-accent" />
+          <Star className="w-4 h-4 mr-2 inline text-yellow-500 fill-yellow-500" />
           Everything You Need to Ship Smarter
         </Badge>
 
@@ -149,10 +149,10 @@ export const FeaturesShowcase = () => {
           }} whileHover={{
             scale: 1.05
           }}>
-            <Card className="glass-card p-6 text-center border-2 border-transparent hover:border-accent/30 transition-all">
-              <Icon className="w-8 h-8 mx-auto mb-3 text-accent" />
-              <div className="text-3xl md:text-4xl font-bold text-gradient mb-1">{stat.value}</div>
-              <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
+            <Card className="glass-card p-6 text-center border-2 border-transparent hover:border-primary/20 transition-all">
+              <Icon className="w-8 h-8 mx-auto mb-3 text-primary" />
+              <div className="text-3xl md:text-4xl font-bold text-primary dark:text-gradient mb-1">{stat.value}</div>
+              <div className="text-sm text-foreground/80 font-medium">{stat.label}</div>
             </Card>
           </motion.div>;
         })}
@@ -175,7 +175,7 @@ export const FeaturesShowcase = () => {
             delay: feature.delay,
             duration: 0.5
           }} onMouseEnter={() => setHoveredIndex(idx)} onMouseLeave={() => setHoveredIndex(null)}>
-            <Card className="glass-card p-6 h-full border-2 border-transparent hover:border-accent/40 transition-all duration-300 group relative overflow-hidden">
+            <Card className="glass-card p-6 h-full border-2 border-transparent hover:border-primary/20 transition-all duration-300 group relative overflow-hidden">
               {/* Animated gradient background on hover */}
               <motion.div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 
@@ -191,7 +191,7 @@ export const FeaturesShowcase = () => {
                 </motion.div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold mb-3 group-hover:text-accent transition-colors">
+                <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
 
@@ -213,7 +213,7 @@ export const FeaturesShowcase = () => {
                   }} transition={{
                     delay: feature.delay + metricIdx * 0.1
                   }}>
-                    <Badge variant="outline" className="bg-accent/5 border-accent/20 text-accent text-xs font-medium">
+                    <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-xs font-medium">
                       <CheckCircle2 className="w-3 h-3 mr-1" />
                       {metric}
                     </Badge>
@@ -235,7 +235,7 @@ export const FeaturesShowcase = () => {
       }} viewport={{
         once: true
       }} className="text-center mt-16">
-        <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-br from-accent/10 via-primary/5 to-accent/10 border border-accent/20">
+        <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/5 to-primary/5 border border-primary/10">
           <div className="flex items-center gap-3">
             <motion.div animate={{
               rotate: 360
@@ -244,9 +244,9 @@ export const FeaturesShowcase = () => {
               repeat: Infinity,
               ease: "linear"
             }}>
-              <Star className="w-6 h-6 text-accent fill-accent" />
+              <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
             </motion.div>
-            <h4 className="text-2xl font-bold text-gradient">
+            <h4 className="text-2xl font-bold text-primary dark:text-gradient">
               Let AI handle your freight
             </h4>
             <motion.div animate={{
@@ -256,10 +256,10 @@ export const FeaturesShowcase = () => {
               repeat: Infinity,
               ease: "linear"
             }}>
-              <Star className="w-6 h-6 text-accent fill-accent" />
+              <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
             </motion.div>
           </div>
-          <p className="text-muted-foreground max-w-2xl">Thousands of carriers trust our AI to process their documents, match carriers, and eliminate broker fees - saving 15-60% on every shipment</p>
+          <p className="text-foreground/80 max-w-2xl">Thousands of carriers trust our AI to process their documents, match carriers, and eliminate broker fees - saving 15-60% on every shipment</p>
         </div>
       </motion.div>
     </div>

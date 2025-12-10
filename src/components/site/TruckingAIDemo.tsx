@@ -51,7 +51,7 @@ export const TruckingAIDemo = () => {
   const runDemo = async (demoType: keyof typeof demoExamples) => {
     setIsLoading(true);
     setResponse("");
-    
+
     try {
       const example = demoExamples[demoType];
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trucking-ai-demo`, {
@@ -73,7 +73,7 @@ export const TruckingAIDemo = () => {
 
       const data = await res.json();
       setResponse(data.response);
-      
+
     } catch (error) {
       console.error("Demo error:", error);
       toast({
@@ -110,10 +110,10 @@ export const TruckingAIDemo = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="glass-card p-6 border-accent/20">
+                <Card className="glass-card p-6 border-primary/20">
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <Icon className="w-6 h-6 text-accent" />
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <Icon className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-2">{demo.title}</h3>
@@ -160,11 +160,11 @@ export const TruckingAIDemo = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="mt-6"
                     >
-                      <label className="text-sm font-medium text-accent mb-2 block flex items-center gap-2">
+                      <label className="text-sm font-medium text-primary mb-2 block flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
                         AI Response:
                       </label>
-                      <div className="bg-gradient-to-br from-accent/5 to-primary/5 rounded-lg p-6 border-2 border-accent/30">
+                      <div className="bg-gradient-to-br from-primary/5 to-primary/5 rounded-lg p-6 border-2 border-primary/30">
                         <div className="prose prose-sm max-w-none">
                           <pre className="whitespace-pre-wrap text-foreground font-sans">
                             {response}

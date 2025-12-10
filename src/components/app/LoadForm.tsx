@@ -11,6 +11,7 @@ import { AddressAutocomplete } from "@/components/app/AddressAutocomplete";
 import { useCreateLoad, useUpdateLoad } from "@/hooks/useLoads";
 import type { Database } from "@/integrations/supabase/types";
 import { CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 type EquipmentType = Database["public"]["Enums"]["equipment_type"];
 type Load = Database["public"]["Tables"]["loads"]["Row"];
@@ -36,13 +37,16 @@ const loadSchema = z.object({
   temperature_max: z.string().optional(),
   special_requirements: z.string().optional(),
   posted_rate: z.string().optional(),
+  is_public: z.boolean().default(true),
+  pickup_ref: z.string().optional(),
+  requires_eld: z.boolean().default(false),
 });
 
 type LoadFormData = z.infer<typeof loadSchema>;
 
 interface LoadFormProps {
   onSuccess?: () => void;
-  initialData?: Partial<Load>;
+  initialData?: Partial<Load> & { is_public?: boolean; pickup_ref?: string; requires_eld?: boolean };
   loadId?: string;
   isEditing?: boolean;
 }
@@ -102,6 +106,7 @@ const COMMODITY_OPTIONS = {
     "Local Deliveries",
     "Small Packages",
     "Retail Goods",
+    "Retail Products",
   ],
   lowboy: [
     "Heavy Machinery",
@@ -140,6 +145,9 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       temperature_max: initialData?.temperature_max?.toString() || "",
       special_requirements: initialData?.special_requirements || "",
       posted_rate: initialData?.posted_rate?.toString() || "",
+      is_public: initialData?.is_public !== undefined ? initialData.is_public : true,
+      pickup_ref: initialData?.pickup_ref || "",
+      requires_eld: initialData?.requires_eld !== undefined ? initialData.requires_eld : false,
     },
   });
 
@@ -181,7 +189,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const rateValue = postedRate ? parseFloat(postedRate) : 0;
   const meetsMinimum = minimumRate ? rateValue >= minimumRate : true;
 
-  const onSubmit = async (data: LoadFormData) => {
+  const onSubmit = async (data: any) => {
     const loadData = {
       origin_address: data.origin_address,
       origin_city: data.origin_city,
@@ -205,17 +213,21 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       posted_rate: data.posted_rate ? parseFloat(data.posted_rate) : null,
       distance_miles: calculatedDistance,
       status: "draft" as const,
+      is_public: data.is_public !== undefined ? data.is_public : true,
+      pickup_ref: data.pickup_ref || null,
+      requires_eld: data.requires_eld !== undefined ? data.requires_eld : false,
     };
 
+    // Using any cast for loadData temporarily to bypass strict typing until types.ts is updated
     if (isEditing && loadId) {
-      updateLoad.mutate(loadData, {
+      updateLoad.mutate(loadData as any, {
         onSuccess: () => {
           form.reset();
           onSuccess?.();
         },
       });
     } else {
-      createLoad.mutate(loadData, {
+      createLoad.mutate(loadData as any, {
         onSuccess: () => {
           form.reset();
           onSuccess?.();
@@ -225,11 +237,11 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   };
 
   const nextStep = async () => {
-    const fieldsToValidate = step === 1 
+    const fieldsToValidate = step === 1
       ? ["origin_address", "origin_city", "origin_state", "origin_zip"]
       : step === 2
-      ? ["destination_address", "destination_city", "destination_state", "destination_zip"]
-      : ["pickup_date", "delivery_date", "equipment_type"];
+        ? ["destination_address", "destination_city", "destination_state", "destination_zip"]
+        : ["pickup_date", "delivery_date", "equipment_type"];
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) setStep(step + 1);
@@ -246,9 +258,8 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
-                className={`h-2 w-16 rounded-full ${
-                  s <= step ? "bg-primary" : "bg-muted"
-                }`}
+                className={`h-2 w-16 rounded-full ${s <= step ? "bg-primary" : "bg-muted"
+                  }`}
               />
             ))}
           </div>
@@ -267,7 +278,22 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 <FormItem>
                   <FormLabel>Facility Name (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Warehouse or business name" {...field} />
+                    <AddressAutocomplete
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Search facility (e.g. Amazon, Walmart)"
+                      onPlaceSelected={(place) => {
+                        if (place.facilityName) {
+                          form.setValue("origin_facility_name", place.facilityName);
+                        }
+                        form.setValue("origin_address", place.address);
+                        form.setValue("origin_city", place.city);
+                        form.setValue("origin_state", place.state);
+                        form.setValue("origin_zip", place.zip);
+                        form.setValue("origin_lat" as any, place.lat);
+                        form.setValue("origin_lng" as any, place.lng);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -355,7 +381,22 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 <FormItem>
                   <FormLabel>Facility Name (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Warehouse or business name" {...field} />
+                    <AddressAutocomplete
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Search facility (e.g. Costco, Target)"
+                      onPlaceSelected={(place) => {
+                        if (place.facilityName) {
+                          form.setValue("destination_facility_name", place.facilityName);
+                        }
+                        form.setValue("destination_address", place.address);
+                        form.setValue("destination_city", place.city);
+                        form.setValue("destination_state", place.state);
+                        form.setValue("destination_zip", place.zip);
+                        form.setValue("destination_lat" as any, place.lat);
+                        form.setValue("destination_lng" as any, place.lng);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -507,8 +548,8 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Commodity</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
+                  <Select
+                    onValueChange={field.onChange}
                     defaultValue={field.value}
                     disabled={!equipmentType}
                   >
@@ -622,6 +663,66 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="is_public"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Public Load Board</FormLabel>
+                    <FormDescription>
+                      Make this load visible to all carriers on the platform
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="requires_eld"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Require ELD Tracking</FormLabel>
+                    <FormDescription>
+                      Only carriers with active ELD integration can bid
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="pickup_ref"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pickup Reference Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="REF-123456" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Hidden from public view. Only visible to booked carrier.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="special_requirements"
@@ -652,13 +753,13 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
               Next
             </Button>
           ) : (
-            <Button 
-              type="submit" 
-              disabled={createLoad.isPending || updateLoad.isPending || (minimumRate ? !meetsMinimum : false)} 
+            <Button
+              type="submit"
+              disabled={createLoad.isPending || updateLoad.isPending || (minimumRate ? !meetsMinimum : false)}
               className="flex-1"
             >
-              {createLoad.isPending || updateLoad.isPending 
-                ? (isEditing ? "Updating..." : "Creating...") 
+              {createLoad.isPending || updateLoad.isPending
+                ? (isEditing ? "Updating..." : "Creating...")
                 : (isEditing ? "Update Load" : "Create Load")}
             </Button>
           )}

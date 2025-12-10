@@ -100,8 +100,8 @@ export const HowItWorksSection = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <Badge variant="outline" className="mb-4 px-4 py-2 text-sm font-medium border-accent/30 bg-accent/5">
-            <Sparkles className="w-4 h-4 mr-2 inline text-accent" />
+          <Badge variant="outline" className="mb-4 px-4 py-2 text-sm font-medium border-primary/30 bg-primary/5">
+            <Sparkles className="w-4 h-4 mr-2 inline text-primary" />
             How It Works for Everyone
           </Badge>
 
@@ -148,7 +148,7 @@ export const HowItWorksSection = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <Card className="glass-card border-2 border-transparent hover:border-accent/30 transition-all duration-300 overflow-hidden">
+                <Card className="glass-card border-2 border-transparent hover:border-primary/20 transition-all duration-300 overflow-hidden">
                   <div className="grid md:grid-cols-2 gap-8 p-8">
                     {/* Left: Step Info */}
                     <div className={`${isEven ? 'md:order-2' : 'md:order-1'}`}>
@@ -176,7 +176,7 @@ export const HowItWorksSection = () => {
                     <div className={`${isEven ? 'md:order-1' : 'md:order-2'}`}>
                       <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
                         <div className="flex items-center gap-2 mb-4">
-                          <Truck className="w-5 h-5 text-accent" />
+                          <Truck className="w-5 h-5 text-primary" />
                           <h4 className="font-bold text-lg">{step.example.title}</h4>
                         </div>
 
@@ -190,7 +190,7 @@ export const HowItWorksSection = () => {
                               transition={{ delay: 0.1 * detailIdx }}
                               className="flex items-center gap-2 text-sm"
                             >
-                              <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                               <span>{detail}</span>
                             </motion.div>
                           ))}
@@ -208,9 +208,9 @@ export const HowItWorksSection = () => {
                           </div>
 
                           <div className="flex items-start gap-2">
-                            <TrendingDown className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                            <TrendingDown className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                             <div>
-                              <p className="font-semibold text-sm text-accent">
+                              <p className="font-semibold text-sm text-primary">
                                 You Avoided:
                               </p>
                               <p className="text-sm">{step.example.savings}</p>
@@ -228,7 +228,7 @@ export const HowItWorksSection = () => {
                         animate={{ y: [0, 10, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
-                        <ArrowRight className="w-6 h-6 text-accent rotate-90" />
+                        <ArrowRight className="w-6 h-6 text-primary rotate-90" />
                       </motion.div>
                     </div>
                   )}

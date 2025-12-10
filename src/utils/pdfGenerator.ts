@@ -23,6 +23,8 @@ interface LoadData {
   temperature_min?: number;
   temperature_max?: number;
   special_requirements?: string;
+  pickup_ref?: string;
+  requires_eld?: boolean;
 }
 
 interface BidData {
@@ -51,43 +53,43 @@ export const generateLoadConfirmationPDF = (
   carrier: CarrierData
 ): Blob => {
   const doc = new jsPDF();
-  
+
   // Colors
   const primaryColor: [number, number, number] = [59, 130, 246]; // Blue
   const darkColor: [number, number, number] = [31, 41, 55];
-  
+
   // Header with logo placeholder
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, 210, 40, 'F');
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('SHIP AI', 105, 20, { align: 'center' });
-  
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text('LOAD CONFIRMATION AGREEMENT', 105, 30, { align: 'center' });
-  
+
   // Reset text color
   doc.setTextColor(...darkColor);
-  
+
   let yPos = 50;
-  
+
   // Load Number and Date
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(`Load Number: #${load.load_number}`, 20, yPos);
   doc.text(`Confirmation Date: ${format(new Date(), 'MM/dd/yyyy')}`, 140, yPos);
-  
+
   yPos += 10;
-  
+
   // Shipper Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('SHIPPER INFORMATION', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Company: ${shipper.company_name || 'N/A'}`, 20, yPos);
@@ -96,13 +98,13 @@ export const generateLoadConfirmationPDF = (
   yPos += 5;
   doc.text(`Email: ${shipper.email}`, 20, yPos);
   yPos += 10;
-  
+
   // Carrier Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('CARRIER INFORMATION', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Company: ${carrier.company_name}`, 20, yPos);
@@ -116,13 +118,13 @@ export const generateLoadConfirmationPDF = (
     yPos += 5;
   }
   yPos += 5;
-  
+
   // Load Details Table
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('LOAD DETAILS', 20, yPos);
   yPos += 5;
-  
+
   autoTable(doc, {
     startY: yPos,
     head: [['Field', 'Value']],
@@ -134,20 +136,21 @@ export const generateLoadConfirmationPDF = (
         'Temperature Range',
         `${load.temperature_min || 'N/A'}°F - ${load.temperature_max || 'N/A'}°F`
       ]] : []),
+      ['ELD Required', load.requires_eld ? 'YES' : 'NO'],
     ],
     theme: 'striped',
     headStyles: { fillColor: primaryColor },
     margin: { left: 20, right: 20 },
   });
-  
+
   yPos = (doc as any).lastAutoTable.finalY + 10;
-  
+
   // Route Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('ROUTE INFORMATION', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('ORIGIN:', 20, yPos);
@@ -162,8 +165,17 @@ export const generateLoadConfirmationPDF = (
   doc.text(`${load.origin_city}, ${load.origin_state} ${load.origin_zip}`, 20, yPos);
   yPos += 5;
   doc.text(`Pickup Date: ${format(new Date(load.pickup_date), 'MM/dd/yyyy')}`, 20, yPos);
+
+  // Pickup Reference
+  if (load.pickup_ref) {
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Pickup Ref: ${load.pickup_ref}`, 20, yPos);
+    doc.setFont('helvetica', 'normal');
+  }
+
   yPos += 10;
-  
+
   doc.setFont('helvetica', 'bold');
   doc.text('DESTINATION:', 20, yPos);
   doc.setFont('helvetica', 'normal');
@@ -178,7 +190,7 @@ export const generateLoadConfirmationPDF = (
   yPos += 5;
   doc.text(`Delivery Date: ${format(new Date(load.delivery_date), 'MM/dd/yyyy')}`, 20, yPos);
   yPos += 10;
-  
+
   // Rate Information
   doc.setFillColor(240, 240, 240);
   doc.rect(20, yPos, 170, 15, 'F');
@@ -186,7 +198,7 @@ export const generateLoadConfirmationPDF = (
   doc.setFont('helvetica', 'bold');
   doc.text(`AGREED RATE: $${bid.bid_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 105, yPos + 10, { align: 'center' });
   yPos += 20;
-  
+
   // Special Requirements
   if (load.special_requirements) {
     doc.setFontSize(12);
@@ -199,18 +211,18 @@ export const generateLoadConfirmationPDF = (
     doc.text(splitText, 20, yPos);
     yPos += (splitText.length * 5) + 5;
   }
-  
+
   // Terms and Conditions
   if (yPos > 240) {
     doc.addPage();
     yPos = 20;
   }
-  
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('TERMS & CONDITIONS', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   const terms = [
@@ -221,34 +233,34 @@ export const generateLoadConfirmationPDF = (
     '5. This agreement is subject to standard carrier-shipper contract terms under federal transportation law.',
     '6. Both parties agree to resolve disputes through arbitration if necessary.',
   ];
-  
+
   terms.forEach(term => {
     const splitTerm = doc.splitTextToSize(term, 170);
     doc.text(splitTerm, 20, yPos);
     yPos += (splitTerm.length * 4) + 3;
   });
-  
+
   yPos += 10;
-  
+
   // Signatures section
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('DIGITAL SIGNATURES:', 20, yPos);
   yPos += 7;
-  
+
   doc.setFont('helvetica', 'normal');
   doc.text(`Shipper: ${shipper.full_name || shipper.company_name || 'N/A'}`, 20, yPos);
   doc.text(`Date: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`, 20, yPos + 5);
-  
+
   doc.text(`Carrier: ${carrier.company_name}`, 110, yPos);
   doc.text(`Date: ${format(new Date(bid.created_at), 'MM/dd/yyyy HH:mm:ss')}`, 110, yPos + 5);
-  
+
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(128, 128, 128);
   doc.text('This document was generated electronically by Ship AI platform', 105, 285, { align: 'center' });
   doc.text(`Confirmation ID: ${bid.id}`, 105, 290, { align: 'center' });
-  
+
   // Return as Blob
   return doc.output('blob');
 };
@@ -259,33 +271,33 @@ export const generateBOLPDF = (
   carrier: CarrierData
 ): Blob => {
   const doc = new jsPDF();
-  
+
   const primaryColor: [number, number, number] = [59, 130, 246];
   const darkColor: [number, number, number] = [31, 41, 55];
-  
+
   // Header
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, 210, 40, 'F');
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('BILL OF LADING', 105, 20, { align: 'center' });
-  
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(`BOL #${load.load_number}`, 105, 30, { align: 'center' });
-  
+
   doc.setTextColor(...darkColor);
-  
+
   let yPos = 50;
-  
+
   // Shipper Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('SHIPPER', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`${shipper.company_name || 'N/A'}`, 20, yPos);
@@ -298,13 +310,13 @@ export const generateBOLPDF = (
   yPos += 5;
   doc.text(`${load.origin_city}, ${load.origin_state} ${load.origin_zip}`, 20, yPos);
   yPos += 10;
-  
+
   // Consignee Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('CONSIGNEE', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   if (load.destination_facility_name) {
@@ -315,13 +327,13 @@ export const generateBOLPDF = (
   yPos += 5;
   doc.text(`${load.destination_city}, ${load.destination_state} ${load.destination_zip}`, 20, yPos);
   yPos += 10;
-  
+
   // Carrier Information
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('CARRIER', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`${carrier.company_name}`, 20, yPos);
@@ -335,7 +347,7 @@ export const generateBOLPDF = (
     yPos += 5;
   }
   yPos += 5;
-  
+
   // Shipment Details
   autoTable(doc, {
     startY: yPos,
@@ -352,9 +364,9 @@ export const generateBOLPDF = (
     headStyles: { fillColor: primaryColor },
     margin: { left: 20, right: 20 },
   });
-  
+
   yPos = (doc as any).lastAutoTable.finalY + 10;
-  
+
   // Special Instructions
   if (load.special_requirements) {
     doc.setFontSize(12);
@@ -367,43 +379,43 @@ export const generateBOLPDF = (
     doc.text(splitText, 20, yPos);
     yPos += (splitText.length * 5) + 10;
   }
-  
+
   // Signature blocks
   if (yPos > 200) {
     doc.addPage();
     yPos = 20;
   }
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  
+
   // Shipper signature
   doc.text('SHIPPER SIGNATURE:', 20, yPos);
   doc.line(20, yPos + 15, 90, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text(`Date: ${format(new Date(), 'MM/dd/yyyy')}`, 20, yPos + 20);
-  
+
   // Carrier signature
   doc.setFont('helvetica', 'bold');
   doc.text('CARRIER SIGNATURE:', 110, yPos);
   doc.line(110, yPos + 15, 180, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text('Date: _______________', 110, yPos + 20);
-  
+
   yPos += 30;
-  
+
   // Receiver signature
   doc.setFont('helvetica', 'bold');
   doc.text('RECEIVER SIGNATURE:', 20, yPos);
   doc.line(20, yPos + 15, 90, yPos + 15);
   doc.setFont('helvetica', 'normal');
   doc.text('Date: _______________', 20, yPos + 20);
-  
+
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(128, 128, 128);
   doc.text('Generated by Ship AI', 105, 285, { align: 'center' });
-  
+
   return doc.output('blob');
 };
 
@@ -414,40 +426,40 @@ export const generateInvoicePDF = (
   carrier: CarrierData
 ): Blob => {
   const doc = new jsPDF();
-  
+
   const primaryColor: [number, number, number] = [59, 130, 246];
   const darkColor: [number, number, number] = [31, 41, 55];
-  
+
   // Header
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, 210, 40, 'F');
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('FREIGHT INVOICE', 105, 20, { align: 'center' });
-  
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(`Invoice #INV-${load.load_number}`, 105, 30, { align: 'center' });
-  
+
   doc.setTextColor(...darkColor);
-  
+
   let yPos = 50;
-  
+
   // Invoice info
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(`Invoice Date: ${format(new Date(), 'MM/dd/yyyy')}`, 20, yPos);
   doc.text(`Due Date: ${format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'MM/dd/yyyy')}`, 140, yPos);
   yPos += 10;
-  
+
   // Bill To
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('BILL TO:', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`${shipper.company_name || 'N/A'}`, 20, yPos);
@@ -456,13 +468,13 @@ export const generateInvoicePDF = (
   yPos += 5;
   doc.text(`${shipper.email}`, 20, yPos);
   yPos += 10;
-  
+
   // Service From
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('SERVICE FROM:', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`${carrier.company_name}`, 20, yPos);
@@ -472,7 +484,7 @@ export const generateInvoicePDF = (
     yPos += 5;
   }
   yPos += 10;
-  
+
   // Service Details
   autoTable(doc, {
     startY: yPos,
@@ -489,9 +501,9 @@ export const generateInvoicePDF = (
     headStyles: { fillColor: primaryColor },
     margin: { left: 20, right: 20 },
   });
-  
+
   yPos = (doc as any).lastAutoTable.finalY + 10;
-  
+
   // Total
   doc.setFillColor(240, 240, 240);
   doc.rect(120, yPos, 70, 20, 'F');
@@ -499,26 +511,26 @@ export const generateInvoicePDF = (
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL DUE:', 125, yPos + 10);
   doc.text(`$${bid.bid_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 180, yPos + 10, { align: 'right' });
-  
+
   yPos += 30;
-  
+
   // Payment Terms
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('PAYMENT TERMS:', 20, yPos);
   yPos += 7;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('Net 30 days from invoice date', 20, yPos);
   yPos += 5;
   doc.text('Payment held in escrow via Ship AI platform', 20, yPos);
-  
+
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(128, 128, 128);
   doc.text('Generated by Ship AI', 105, 285, { align: 'center' });
   doc.text(`Invoice ID: ${bid.id}`, 105, 290, { align: 'center' });
-  
+
   return doc.output('blob');
 };

@@ -8,184 +8,136 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 270 10% 15%;
+    /* Base - Platinum / Porcelain */
+    --background: 210 40% 98%;
+    /* refined off-white/blue-grey tint */
+    --foreground: 222 47% 11%;
+    /* dark slate/navy */
 
     --card: 0 0% 100%;
-    --card-foreground: 270 10% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 270 10% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Logo Purple - Dominant */
-    --primary: 293 84% 61%;
+    /* Brand Colors - Adjusted for light mode readability */
+    --primary: 270 70% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 91% 60%;
+    --secondary: 220 80% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 270 40% 96%;
-    --muted-foreground: 270 15% 50%;
+    /* Muted UI Elements */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Logo Purple accent */
-    --accent: 270 91% 65%;
-    --accent-foreground: 0 0% 100%;
+    /* Accents */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 270 30% 88%;
-    --input: 270 30% 92%;
-    --ring: 293 84% 61%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 270 70% 55%;
 
-    --radius: 1.25rem;
+    --radius: 0.75rem;
 
+    /* Sidebar - Light Mode - Ethereal */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 270 10% 15%;
-    --sidebar-primary: 293 84% 61%;
+    /* or very slight off-white */
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 270 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 96%;
-    --sidebar-accent-foreground: 217 91% 30%;
-    --sidebar-border: 270 30% 88%;
-    --sidebar-ring: 293 84% 61%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 270 70% 55%;
 
-    /* Logo color palette */
-    --logo-purple: 293 84% 61%;
-    --logo-purple-light: 270 91% 65%;
-    --logo-blue: 217 91% 60%;
-    --logo-blue-dark: 221 83% 53%;
-    --logo-teal: 199 89% 48%;
-    --logo-teal-light: 188 94% 43%;
+    /* New Gradients & Effects - Light Mode */
+    /* Subtle silver/platinum gradients */
+    --hero-gradient: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+    --glass-background: hsla(0 0% 100% / 0.6);
+    --glass-border: hsla(220 13% 91% / 0.6);
+    --glass-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 
-    /* Rich Purple palette (updated to logo purple) */
-    --purple-50: 293 90% 98%;
-    --purple-100: 293 85% 95%;
-    --purple-200: 293 80% 88%;
-    --purple-300: 293 80% 75%;
-    --purple-400: 293 84% 65%;
-    --purple-500: 293 84% 61%;
-    --purple-600: 293 80% 55%;
-    --purple-700: 293 75% 50%;
-    --purple-800: 293 70% 45%;
-    --purple-900: 293 65% 35%;
-
-    /* Blue palette */
-    --blue-50: 217 100% 98%;
-    --blue-100: 217 95% 95%;
-    --blue-200: 217 91% 88%;
-    --blue-300: 217 91% 75%;
-    --blue-400: 217 91% 65%;
-    --blue-500: 217 91% 60%;
-    --blue-600: 221 83% 53%;
-    --blue-700: 221 80% 48%;
-    --blue-800: 221 75% 43%;
-    --blue-900: 221 70% 35%;
-
-    /* Teal palette */
-    --teal-50: 199 100% 98%;
-    --teal-100: 199 95% 95%;
-    --teal-200: 199 90% 85%;
-    --teal-300: 199 89% 65%;
-    --teal-400: 199 89% 55%;
-    --teal-500: 199 89% 48%;
-    --teal-600: 188 94% 43%;
-    --teal-700: 188 90% 38%;
-    --teal-800: 188 85% 33%;
-    --teal-900: 188 80% 28%;
-
-    /* Premium gradients - Purple → Blue → Teal */
-    --hero-gradient: linear-gradient(135deg, hsl(293 84% 61%) 0%, hsl(270 91% 65%) 25%, hsl(217 91% 60%) 60%, hsl(199 89% 48%) 100%);
-    --accent-gradient: linear-gradient(135deg, hsl(293 84% 61%) 0%, hsl(270 91% 65%) 40%, hsl(217 91% 60%) 100%);
-    --button-gradient: linear-gradient(135deg, hsl(293 84% 61%) 0%, hsl(270 91% 65%) 100%);
-    --subtle-gradient: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(293 50% 98%) 50%, hsl(217 40% 98%) 100%);
-    --mesh-gradient: radial-gradient(at 0% 0%, hsl(293 84% 90%) 0px, transparent 50%), radial-gradient(at 50% 50%, hsl(217 91% 85%) 0px, transparent 50%), radial-gradient(at 100% 0%, hsl(199 89% 88%) 0px, transparent 50%);
-
-    /* Glass effects with logo colors */
-    --glass-background: hsla(293 80% 98% / 0.7);
-    --glass-border: hsla(293 84% 75% / 0.3);
-    --glass-shadow: 0 8px 32px hsla(293 84% 70% / 0.15);
-
-    /* Shimmer & glow with logo colors */
-    --shimmer: linear-gradient(90deg, transparent, hsla(293 84% 80% / 0.6), hsla(217 91% 80% / 0.4), transparent);
-    --glow-purple: 0 0 60px hsla(293 84% 70% / 0.4);
-    --glow-blue: 0 0 40px hsla(217 91% 70% / 0.3);
-    --glow-teal: 0 0 30px hsla(199 89% 60% / 0.25);
-    --glow-accent: 0 4px 24px hsla(293 84% 65% / 0.25), 0 2px 12px hsla(217 91% 65% / 0.15);
-
-    /* Magic cursor with logo purple */
-    --mouse-sparkles-glow-rgb: 217 70 239;
+    /* Magic cursor */
+    --mouse-sparkles-glow-rgb: 139 92 246;
   }
 
   .dark {
-    /* Softer, more harmonious background */
-    --background: 260 40% 12%;
-    --foreground: 250 30% 95%;
+    /* Deep Void - The "Billion Dollar" Dark Mode */
+    /* Not pitch black, but very deep slate/zinc */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
 
-    /* Better card separation */
-    --card: 260 35% 16%;
-    --card-foreground: 250 30% 95%;
+    /* Cards - Slightly lighter void, distinct from bg */
+    --card: 240 6% 6%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 260 35% 16%;
-    --popover-foreground: 250 30% 95%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Logo Purple - Dominant for dark mode */
-    --primary: 293 84% 65%;
+    /* Primary - Electric Violet for dark mode pop */
+    --primary: 270 80% 65%;
     --primary-foreground: 0 0% 100%;
 
-    /* Logo Blue - Secondary */
-    --secondary: 217 91% 65%;
+    /* Secondary - Electric Blue */
+    --secondary: 220 90% 65%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Better muted colors */
-    --muted: 260 30% 18%;
-    --muted-foreground: 260 15% 70%;
+    /* Muted Text - Essential for hierarchy */
+    --muted: 240 6% 10%;
+    --muted-foreground: 240 5% 65%;
 
-    /* Logo Purple accent */
-    --accent: 293 84% 65%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Subtle interactive states */
+    --accent: 240 6% 10%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 68% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* More visible borders and inputs with purple/blue tint */
-    --border: 260 30% 25%;
-    --input: 260 30% 25%;
-    --ring: 293 84% 70%;
+    /* Borders - Extremely subtle, barely there */
+    --border: 240 6% 12%;
+    --input: 240 6% 12%;
+    --ring: 270 80% 65%;
 
-    /* Sidebar matching main theme with logo colors */
-    --sidebar-background: 260 40% 12%;
-    --sidebar-foreground: 250 30% 95%;
-    --sidebar-primary: 293 84% 65%;
+    /* Sidebar - Blends with background */
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 240 5% 65%;
+    --sidebar-primary: 270 80% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 25%;
-    --sidebar-accent-foreground: 217 91% 90%;
-    --sidebar-border: 260 30% 25%;
-    --sidebar-ring: 293 84%70%;
+    --sidebar-accent: 240 6% 10%;
+    --sidebar-accent-foreground: 240 5% 95%;
+    --sidebar-border: 240 6% 12%;
+    --sidebar-ring: 270 80% 65%;
 
-    /* Rich purple/blue glow for dark mode */
-    --purple-glow: 293 84% 65%;
-    --blue-glow: 217 91% 65%;
-    --teal-glow: 199 89% 55%;
-    --purple-deep: 260 40% 15%;
+    /* Premium Gradients - Void Style */
+    /* Subtle aurora effect, not overwhelming */
+    --hero-gradient: radial-gradient(circle at 50% 0%, hsla(270 80% 65% / 0.15) 0%, transparent 60%),
+      radial-gradient(circle at 100% 0%, hsla(220 90% 65% / 0.1) 0%, transparent 50%);
 
-    /* Enhanced gradients for dark mode - Logo colors */
-    --hero-gradient: linear-gradient(135deg, hsl(260 50% 25%) 0%, hsl(293 70% 45%) 30%, hsl(217 70% 50%) 70%, hsl(199 70% 45%) 100%);
-    --accent-gradient: linear-gradient(135deg, hsl(293 84% 60%) 0%, hsl(270 91% 65%) 40%, hsl(217 91% 65%) 100%);
-    --button-gradient: linear-gradient(135deg, hsl(293 84% 60%) 0%, hsl(270 91% 65%) 100%);
-    --subtle-gradient: linear-gradient(180deg, hsl(260 40% 12%) 0%, hsl(265 38% 14%) 50%, hsl(270 35% 16%) 100%);
-    --mesh-gradient: radial-gradient(at 0% 0%, hsl(293 50% 25%) 0px, transparent 50%), radial-gradient(at 50% 50%, hsl(217 60% 30%) 0px, transparent 50%), radial-gradient(at 100% 0%, hsl(199 55% 28%) 0px, transparent 50%);
+    --accent-gradient: linear-gradient(90deg, #9333EA 0%, #3B82F6 100%);
+    --button-gradient: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    --subtle-gradient: linear-gradient(to bottom, hsl(240 10% 4%), hsl(240 10% 3%));
 
-    /* Enhanced glass effects with logo colors */
-    --glass-background: hsla(260 35% 16% / 0.8);
-    --glass-border: hsla(293 84% 65% / 0.5);
-    --glass-shadow: 0 8px 32px hsla(0 0% 0% / 0.6), 0 0 60px hsla(293 84% 50% / 0.15), 0 0 30px hsla(217 91% 50% / 0.1);
+    --mesh-gradient:
+      radial-gradient(at 0% 0%, hsla(270 80% 20% / 0.2) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(220 80% 20% / 0.2) 0px, transparent 50%);
 
-    /* Enhanced shimmer & glow for dark mode with gradient colors */
-    --shimmer: linear-gradient(90deg, transparent, hsla(293 84% 70% / 0.6), hsla(217 91% 70% / 0.4), transparent);
-    --glow-purple: 0 0 60px hsla(293 84% 65% / 0.5), 0 0 30px hsla(293 84% 65% / 0.3);
-    --glow-blue: 0 0 50px hsla(217 91% 65% / 0.4), 0 0 25px hsla(217 91% 65% / 0.2);
-    --glow-teal: 0 0 40px hsla(199 89% 55% / 0.35);
-    --glow-accent: 0 8px 32px hsla(293 84% 65% / 0.3), 0 4px 16px hsla(217 91% 65% / 0.2);
+    /* Premium Glass - The "Vercel" Look */
+    /* White with extremely low opacity, blur essential */
+    --glass-background: hsla(0 0% 100% / 0.03);
+    --glass-border: hsla(0 0% 100% / 0.08);
+    /* Crisp, thin white border */
+    --glass-shadow: 0 0 0 1px hsla(0 0% 100% / 0.08), 0 8px 32px -4px hsla(0 0% 0% / 0.5);
+
+    /* Glows - Focused and elegant */
+    --shimmer: linear-gradient(90deg, transparent, hsla(0 0% 100% / 0.1), transparent);
+    --glow-purple: 0 0 80px hsla(270 80% 60% / 0.15);
+    --glow-blue: 0 0 60px hsla(220 90% 60% / 0.15);
+    --glow-accent: 0 0 40px hsla(270 80% 60% / 0.2);
   }
 }
 
@@ -468,5 +420,23 @@ All colors MUST be HSL.
     background: rgb(var(--mouse-sparkles-glow-rgb));
     box-shadow: 0 0 12px 6px rgb(var(--mouse-sparkles-glow-rgb) / 0.6);
     z-index: 9998;
+  }
+}
+
+@layer utilities {
+  .animate-scroll {
+    animation: scroll 40s linear infinite;
+  }
+  
+  @keyframes scroll {
+    to {
+      transform: translate(calc(-50%));
+    }
+  }
+
+  /* Gradient Mask for Carousel */
+  .mask-gradient-x {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   }
 }

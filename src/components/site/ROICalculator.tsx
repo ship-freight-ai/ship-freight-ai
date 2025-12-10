@@ -41,7 +41,7 @@ export const ROICalculator = () => {
   return (
     <Card className="glass-card p-8 max-w-5xl mx-auto">
       <div className="text-center mb-8">
-        <TrendingUp className="w-16 h-16 text-accent mx-auto mb-4" />
+        <TrendingUp className="w-16 h-16 text-primary mx-auto mb-4" />
         <h2 className="text-4xl font-bold mb-3">ROI Calculator</h2>
         <p className="text-muted-foreground text-lg">
           See exactly how much you can {userType === "shipper" ? "save" : "gain"} by cutting out the middleman
@@ -64,7 +64,7 @@ export const ROICalculator = () => {
               <Briefcase className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-lg">Your Business Details</h3>
             </div>
-            
+
             <div className="space-y-5">
               <div>
                 <Label htmlFor="currency" className="text-base mb-2 block font-medium">Currency</Label>
@@ -199,7 +199,7 @@ export const ROICalculator = () => {
                   </div>
                 </Card>
 
-                <Card className="relative overflow-hidden accent-gradient p-6 glow-effect hover:shadow-xl transition-all">
+                <Card className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 dark:accent-gradient p-6 glow-effect hover:shadow-xl transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -243,7 +243,7 @@ export const ROICalculator = () => {
 
                 <Card className="border-2 p-6 space-y-4">
                   <p className="font-semibold text-base mb-4">How we calculated your savings:</p>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
                       <div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ export const ROICalculator = () => {
                         {currencySymbol}{monthlyBrokerFees.toLocaleString()}{currencySuffix}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Minus className="w-5 h-5 text-muted-foreground" />
@@ -264,13 +264,13 @@ export const ROICalculator = () => {
                         {currencySymbol}{monthlyPlatformCost.toLocaleString()}{currencySuffix}
                       </Badge>
                     </div>
-                    
+
                     <div className="h-px bg-border my-2" />
-                    
+
                     <div className="flex items-center justify-center py-2">
                       <ArrowRight className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    
+
                     <div className="p-4 bg-green-500/10 border-2 border-green-500/30 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -290,15 +290,15 @@ export const ROICalculator = () => {
               </>
             ) : (
               <>
-                <Card className="bg-accent/10 border-accent/20 p-6 hover:bg-accent/15 transition-colors">
+                <Card className="bg-primary/5 border-primary/20 p-6 hover:bg-primary/10 transition-colors">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-accent/20 rounded-lg">
-                      <TrendingUp className="w-5 h-5 text-accent" />
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-primary" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground">Extra revenue potential</p>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-accent">
+                    <p className="text-3xl font-bold text-primary">
                       {currencySymbol}{monthlyGainVsBroker.toLocaleString()}
                     </p>
                     <Badge variant="outline" className="text-xs">
@@ -333,7 +333,7 @@ export const ROICalculator = () => {
                   </div>
                 </Card>
 
-                <Card className="relative overflow-hidden accent-gradient p-6 glow-effect hover:shadow-xl transition-all">
+                <Card className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 dark:accent-gradient p-6 glow-effect hover:shadow-xl transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -377,18 +377,18 @@ export const ROICalculator = () => {
 
                 <Card className="border-2 p-6 space-y-4">
                   <p className="font-semibold text-base mb-4">How we calculated your gain:</p>
-                  
+
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-accent/10 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <Plus className="w-5 h-5 text-accent" />
+                        <Plus className="w-5 h-5 text-primary" />
                         <span className="text-sm">Extra revenue (direct vs broker)</span>
                       </div>
-                      <Badge className="text-base px-3 py-1 bg-accent">
+                      <Badge className="text-base px-3 py-1 bg-primary text-white">
                         {currencySymbol}{monthlyGainVsBroker.toLocaleString()}{currencySuffix}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Minus className="w-5 h-5 text-muted-foreground" />
@@ -398,13 +398,13 @@ export const ROICalculator = () => {
                         {currencySymbol}{carrierMonthlyCost.toLocaleString()}{currencySuffix}
                       </Badge>
                     </div>
-                    
+
                     <div className="h-px bg-border my-2" />
-                    
+
                     <div className="flex items-center justify-center py-2">
                       <ArrowRight className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    
+
                     <div className="p-4 bg-green-500/10 border-2 border-green-500/30 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -429,8 +429,8 @@ export const ROICalculator = () => {
 
       <div className="text-center pt-6 border-t border-border">
         <p className="text-sm text-muted-foreground mb-4">
-          {userType === "shipper" 
-            ? "These are estimates. Actual savings depend on your specific broker rates and load volumes." 
+          {userType === "shipper"
+            ? "These are estimates. Actual savings depend on your specific broker rates and load volumes."
             : "These are estimates. Actual gains depend on your lanes and the rates you negotiate directly with shippers."}
         </p>
         <p className="text-xs text-muted-foreground">

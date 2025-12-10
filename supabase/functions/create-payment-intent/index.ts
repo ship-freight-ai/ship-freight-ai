@@ -15,14 +15,14 @@ const MAX_REQUESTS_PER_WINDOW = 50; // 50 requests per minute for authenticated 
 function checkRateLimit(identifier: string): boolean {
   const now = Date.now();
   const requests = rateLimitMap.get(identifier) || [];
-  
+
   // Remove old requests outside the window
   const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW_MS);
-  
+
   if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
     return false;
   }
-  
+
   recentRequests.push(now);
   rateLimitMap.set(identifier, recentRequests);
   return true;
@@ -67,12 +67,16 @@ serve(async (req) => {
       );
     }
 
-    const { loadId, amount, carrierId } = await req.json();
+    const { loadId, amount, carrierId, bidId } = await req.json();
 
     // Validate required fields
-    if (!loadId || !amount || !carrierId) {
+    if (!loadId || !amount || !carrierId || !bidId) {
       throw new Error("Missing required fields");
     }
+
+    // ... (amount validation logic persists in lines 77-85 which I'm not touching in this chunk if possible, but I need to be careful with range)
+    // Actually, I'll allow the context to handle the lines I skip if I target distinct block.
+    // Let's target the destructuring and metadata specifically.
 
     // Validate amount: must be positive number with reasonable limits
     if (typeof amount !== 'number' || amount <= 0 || amount > 10000000) {
@@ -118,9 +122,12 @@ serve(async (req) => {
         load_id: loadId,
         carrier_id: carrierId,
         shipper_id: user.id,
+        bid_id: bidId,
       },
       capture_method: "manual", // Hold funds in escrow
       description: `Payment for load ${loadId}`,
+    }, {
+      idempotencyKey: `pi_${loadId}_${bidId}_${Date.now()}`, // Simple idempotency key based on load/bid
     });
 
     // Create payment record in database
@@ -155,11 +162,11 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Payment intent creation error:", error);
-    
+
     // Return sanitized error message
     let errorMessage = "Failed to create payment. Please try again.";
     let statusCode = 400;
-    
+
     if (error instanceof Error) {
       if (error.message === "Unauthorized") {
         errorMessage = "Authentication required.";
@@ -171,7 +178,7 @@ serve(async (req) => {
         statusCode = 403;
       }
     }
-    
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {

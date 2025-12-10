@@ -13,12 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { loadId } = await req.json();
+    const { loadId, finalAmount, notes } = await req.json();
 
     if (!loadId) {
       throw new Error("Missing loadId");
     }
 
+    // ... (Init Stripe & Supabase & Auth - skipped for brevity in replacement if context allows, but here we replace block)
     // Initialize Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -28,12 +29,10 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Initialize Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get authenticated user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -64,12 +63,11 @@ serve(async (req) => {
       throw new Error("Load not found");
     }
 
-    // Check if user is admin
     const { data: userRoles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id);
-    
+
     const isAdmin = userRoles?.some(r => r.role === "admin");
 
     if (load.shipper_id !== user.id || load.status !== "delivered") {
@@ -80,7 +78,7 @@ serve(async (req) => {
       throw new Error("Payment not in escrow");
     }
 
-    // Check if BOL/POD is approved (unless admin override)
+    // ... (BOL Check omitted for brevity if not changing, but let's keep robust)
     if (!isAdmin) {
       const { data: bolDocument } = await supabase
         .from("documents")
@@ -95,9 +93,26 @@ serve(async (req) => {
       }
     }
 
+    // Determine capture amount
+    let captureAmount = payment.amount; // Default to full amount
+    if (finalAmount !== undefined && finalAmount !== null) {
+      if (finalAmount > payment.amount) {
+        // For now, disallow capturing MORE than auth. 
+        // In future, could support creating separate charge.
+        throw new Error("Final amount cannot exceed authorized amount (Escrow)");
+      }
+      captureAmount = finalAmount;
+    }
+
     // Capture the payment intent
+    const captureOptions: any = {};
+    if (captureAmount < payment.amount) {
+      captureOptions.amount_to_capture = captureAmount;
+    }
+
     const paymentIntent = await stripe.paymentIntents.capture(
-      payment.stripe_payment_intent_id!
+      payment.stripe_payment_intent_id!,
+      captureOptions
     );
 
     if (paymentIntent.status !== "succeeded") {
@@ -110,11 +125,12 @@ serve(async (req) => {
       .update({
         status: "released",
         released_at: new Date().toISOString(),
+        final_amount: captureAmount,
+        notes: notes || payment.notes
       })
       .eq("id", payment.id);
 
     if (updateError) {
-      console.error("Update error:", updateError);
       throw new Error("Failed to update payment status");
     }
 
@@ -136,11 +152,11 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Payment release error:", error);
-    
+
     // Return sanitized error message
     let errorMessage = "Failed to release payment. Please try again.";
     let statusCode = 400;
-    
+
     if (error instanceof Error) {
       if (error.message === "Unauthorized") {
         errorMessage = "Authentication required.";
@@ -158,7 +174,7 @@ serve(async (req) => {
         statusCode = 403;
       }
     }
-    
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {

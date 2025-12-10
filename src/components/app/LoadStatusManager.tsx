@@ -61,7 +61,7 @@ export function LoadStatusManager({ loadId, currentStatus }: LoadStatusManagerPr
 
   const handleStatusChange = (newStatus: LoadStatus) => {
     const criticalTransitions: LoadStatus[] = ["booked", "delivered", "completed", "cancelled"];
-    
+
     if (criticalTransitions.includes(newStatus)) {
       setConfirmStatus(newStatus);
     } else {
@@ -105,6 +105,7 @@ export function LoadStatusManager({ loadId, currentStatus }: LoadStatusManagerPr
               Are you sure you want to change the status to{" "}
               <strong>{confirmStatus && statusLabels[confirmStatus]}</strong>?
               {confirmStatus === "cancelled" && " This action cannot be undone."}
+              {confirmStatus === "delivered" && " This will indicate the load has been safely delivered. You should review and release the payment shortly after."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

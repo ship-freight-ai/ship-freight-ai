@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { FileText, Download, DollarSign, Truck, ExternalLink } from "lucide-react";
+import { FileText, Download, DollarSign, Truck, ExternalLink, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,7 +85,7 @@ export function MessageThread({ messages, currentUserId, loadId, otherUserId }: 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUserId;
-          
+
           return (
             <div
               key={message.id}
@@ -103,7 +103,7 @@ export function MessageThread({ messages, currentUserId, loadId, otherUserId }: 
                 )}
               >
                 <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
-                
+
                 {message.attachment_url && (
                   <div className="mt-2 pt-2 border-t border-current/20">
                     <a
@@ -119,13 +119,20 @@ export function MessageThread({ messages, currentUserId, loadId, otherUserId }: 
                   </div>
                 )}
               </div>
-              
-              <span className="text-xs text-muted-foreground px-1">
-                {format(new Date(message.created_at), "MMM dd, h:mm a")}
-                {!message.read && !isOwn && (
-                  <span className="ml-2 text-primary">• Unread</span>
+
+              <div className="flex items-center justify-end gap-1 mt-1 px-1">
+                <span className="text-[10px] text-muted-foreground">
+                  {format(new Date(message.created_at), "MMM dd, h:mm a")}
+                </span>
+                {isOwn && (
+                  <CheckCheck
+                    className={cn(
+                      "w-3 h-3",
+                      message.read ? "text-blue-500" : "text-muted-foreground/50"
+                    )}
+                  />
                 )}
-              </span>
+              </div>
             </div>
           );
         })}

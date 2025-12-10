@@ -1,272 +1,234 @@
+
+import { useState, useRef } from "react";
 import { NavSite } from "@/components/site/NavSite";
 import { FooterSite } from "@/components/site/FooterSite";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { motion } from "framer-motion";
-import { Mail, Send } from "lucide-react";
-import { useState, useRef } from "react";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
+import { Loader2, Send, CheckCircle2 } from "lucide-react";
+import ReCAPTCHA from "react-google-recaptcha";
 import { supabase } from "@/integrations/supabase/client";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
 
-const contactSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
-  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
-  category: z.enum(["carrier", "shipper", "media", "partnership", "other"], {
-    required_error: "Please select an inquiry type",
-  }),
-  message: z.string().trim().min(10, "Message must be at least 10 characters").max(1000, "Message must be less than 1000 characters"),
-});
-
-type ContactFormData = z.infer<typeof contactSchema>;
-
-export default function SiteContact() {
-  const [formData, setFormData] = useState<ContactFormData>({
+export default function Contact() {
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
-    category: "other",
+    subject: "",
     message: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const { toast } = useToast();
+
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (!captchaToken) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the reCAPTCHA verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      // Validate CAPTCHA
-      if (!captchaToken) {
-        toast({
-          title: "Verification Required",
-          description: "Please complete the CAPTCHA verification",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validate form data
-      const validatedData = contactSchema.parse(formData);
-
-      // Call edge function to send email
-      const { data, error } = await supabase.functions.invoke("send-contact-email", {
-        body: {
-          ...validatedData,
-          captchaToken,
-        },
-      });
+      // Insert into Supabase
+      const { error } = await supabase
+        .from("contact_submissions")
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+            status: 'new'
+          },
+        ]);
 
       if (error) throw error;
 
+      setIsSuccess(true);
       toast({
-        title: "Message sent!",
-        description: "Thank you for contacting us. We'll get back to you soon.",
+        title: "Message Sent!",
+        description: "We've received your message and will get back to you shortly.",
       });
 
-      // Reset form and captcha
-      setFormData({
-        name: "",
-        email: "",
-        category: "other",
-        message: "",
-      });
-      captchaRef.current?.resetCaptcha();
+      // Reset form
+      setFormData({ name: "", email: "", subject: "", message: "" });
       setCaptchaToken(null);
+      recaptchaRef.current?.reset();
+
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to send message. Please try again or email us directly.",
-          variant: "destructive",
-        });
-      }
-      // Reset captcha on error
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Submission failed",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof ContactFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <NavSite />
 
-      <section className="pt-32 pb-20">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-            <h1 className="text-5xl font-bold mb-6">Get in Touch</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Whether you're a carrier, shipper, media outlet, or potential partner, we'd love to hear from you.
+      <main className="container mx-auto px-4 py-24 md:py-32">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+
+          {/* Contact Info */}
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 mb-6">
+              Get in Touch
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Have questions about Ship AI? Our team is here to help you optimize your freight operations.
             </p>
-          </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-12">
-            {/* Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="glass-card p-8">
-                <h2 className="text-2xl font-bold mb-6">Send us a message</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="name">Name *</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder="Your full name"
-                      required
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="your@email.com"
-                      required
-                      maxLength={255}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Inquiry Type *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => handleInputChange("category", value)}
-                    >
-                      <SelectTrigger id="category">
-                        <SelectValue placeholder="Select inquiry type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="carrier">I'm a Carrier</SelectItem>
-                        <SelectItem value="shipper">I'm a Shipper</SelectItem>
-                        <SelectItem value="media">Media Inquiry</SelectItem>
-                        <SelectItem value="partnership">Partnership Opportunity</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message">Message *</Label>
-                    <Textarea
-                      id="message"
-                      value={formData.message}
-                      onChange={(e) => handleInputChange("message", e.target.value)}
-                      placeholder="Tell us how we can help..."
-                      required
-                      rows={6}
-                      maxLength={1000}
-                      className="resize-none"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formData.message.length}/1000 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Verification *</Label>
-                    <HCaptcha
-                      sitekey="976ceb3a-35be-49c6-9b3c-d27c0f141b52"
-                      onVerify={(token) => setCaptchaToken(token)}
-                      onExpire={() => setCaptchaToken(null)}
-                      onError={() => setCaptchaToken(null)}
-                      ref={captchaRef}
-                      theme="light"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      "Sending..."
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Send Message
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Card>
-            </motion.div>
-
-            {/* Contact Info */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-8"
-            >
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
-                <div className="space-y-6">
-                  <Card className="glass-card p-6 hover:scale-105 transition-transform">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-lg bg-accent/10">
-                        <Mail className="w-6 h-6 text-accent" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-1">Email</h3>
-                        <a
-                          href="mailto:go@shipfreight.ai"
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          go@shipfreight.ai
-                        </a>
-                      </div>
-                    </div>
-                  </Card>
-
-                </div>
+            <div className="space-y-6">
+              <div className="glass-card p-6 rounded-xl border border-white/10 dark:border-white/5">
+                <h3 className="font-semibold text-foreground mb-2">Support</h3>
+                <p className="text-muted-foreground">support@shipai.com</p>
+                <p className="text-sm text-muted-foreground mt-1">+1 (800) 555-0123</p>
               </div>
 
-              <Card className="glass-card p-6 bg-accent/5">
-                <h3 className="font-semibold mb-3">Quick Response Time</h3>
-                <p className="text-sm text-muted-foreground">
-                  We typically respond to all inquiries within 24 hours during business days.
-                  For urgent matters, please indicate "URGENT" in your message subject.
+              <div className="glass-card p-6 rounded-xl border border-white/10 dark:border-white/5">
+                <h3 className="font-semibold text-foreground mb-2">Sales</h3>
+                <p className="text-muted-foreground">sales@shipai.com</p>
+                <p className="text-sm text-muted-foreground mt-1 text-primary cursor-pointer hover:underline">
+                  Schedule a Demo &rarr;
                 </p>
-              </Card>
-            </motion.div>
+              </div>
+            </div>
+
+            {/* Trust Badges or decorative elements could go here */}
           </div>
+
+          {/* Contact Form */}
+          <Card className="glass-card p-8 border-white/10 dark:border-white/5 shadow-xl relative overflow-hidden group">
+            {/* Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000" />
+
+            {isSuccess ? (
+              <div className="h-full flex flex-col items-center justify-center text-center py-12 space-y-4 animate-in fade-in zoom-in duration-500">
+                <div className="h-20 w-20 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Message Sent!</h3>
+                <p className="text-muted-foreground">
+                  Thank you for reaching out. A member of our team will review your message and respond within 24 hours.
+                </p>
+                <Button
+                  onClick={() => setIsSuccess(false)}
+                  variant="outline"
+                  className="mt-6"
+                >
+                  Send Another Message
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="relative space-y-6 z-10">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium text-foreground">Name</label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="bg-background/50 border-white/10 focus:border-primary/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="john@company.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="bg-background/50 border-white/10 focus:border-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="subject" className="text-sm font-medium text-foreground">Subject</label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    placeholder="How can we help?"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    className="bg-background/50 border-white/10 focus:border-primary/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="message" className="text-sm font-medium text-foreground">Message</label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="Tell us about your shipping needs..."
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    className="min-h-[150px] bg-background/50 border-white/10 focus:border-primary/50 resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-center pt-2">
+                  {/* Test Site Key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI */}
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                    onChange={handleCaptchaChange}
+                    theme="dark"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      Send Message
+                      <Send className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
+          </Card>
         </div>
-      </section>
+      </main>
 
       <FooterSite />
     </div>
