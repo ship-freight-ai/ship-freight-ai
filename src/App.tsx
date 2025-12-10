@@ -73,7 +73,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   {/* Site routes (marketing) */}
-                  <Route path="/" element={<Navigate to="/site" replace />} />
+                  <Route path="/" element={<SiteHome />} />
                   <Route path="/site" element={<SiteHome />} />
                   <Route path="/site/pricing" element={<SitePricing />} />
                   <Route path="/site/roles" element={<SiteRoles />} />
