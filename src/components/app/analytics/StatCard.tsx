@@ -10,6 +10,7 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
+  description?: string; // Added description prop
   className?: string; // Added className prop
   id?: string; // Added id prop
 }
@@ -19,6 +20,7 @@ export default function StatCard({
   value,
   icon: Icon,
   trend,
+  description, // Destructured description
   className, // Destructured className
   id // Destructured id
 }: StatCardProps) {
@@ -38,7 +40,7 @@ export default function StatCard({
               </p>
             )}
           </div>
-          <div className={`${iconColor}`}>
+          <div className="text-primary">
             <Icon className="w-10 h-10" />
           </div>
         </div>
