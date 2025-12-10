@@ -8,9 +8,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, Truck, Eye, EyeOff, CheckCircle, AlertCircle, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import ReCAPTCHA from "react-google-recaptcha";
 
 // Block common free email providers
 const PUBLIC_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com", "icloud.com", "protonmail.com"];
@@ -47,6 +48,10 @@ export default function SiteAuth() {
   const [dotNumber, setDotNumber] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifiedCarrier, setVerifiedCarrier] = useState<any>(null);
+
+  // reCAPTCHA State
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   // Update isSignUp when URL mode parameter changes
   useEffect(() => {
@@ -126,6 +131,15 @@ export default function SiteAuth() {
   };
 
   const handleAuth = async () => {
+    if (!captchaToken) {
+      toast({
+        variant: "destructive",
+        title: "Verification Required",
+        description: "Please complete the reCAPTCHA verification.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Validate inputs
@@ -200,7 +214,7 @@ export default function SiteAuth() {
             fullName: fullName.trim(),
             companyName: companyName.trim(),
             role: selectedRole,
-            captchaToken: "skipped",
+            captchaToken: captchaToken,
             carrierDetails: verifiedCarrier ? {
               dotNumber: verifiedCarrier.dotNumber,
               mcNumber: verifiedCarrier.mcNumber,
@@ -494,6 +508,16 @@ export default function SiteAuth() {
                       </div>
                     </>
                   )}
+
+                  {/* reCAPTCHA */}
+                  <div className="flex justify-center pt-2">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey="6LfytycsAAAAAI09TFU48gcTnPeN0kTQ9W92SUBq"
+                      onChange={(token) => setCaptchaToken(token)}
+                      theme="dark"
+                    />
+                  </div>
 
                   {isSignUp && (
                     <div className="space-y-4 pt-2">
