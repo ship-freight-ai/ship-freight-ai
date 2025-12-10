@@ -47,6 +47,7 @@ export function AddressAutocomplete({
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  const isSelectionRef = useRef(false);
 
 
   // Update dropdown position
@@ -168,12 +169,18 @@ export function AddressAutocomplete({
       console.error("Error fetching suggestions:", error);
       setIsLoading(false);
       setSuggestions([]);
+      setShowDropdown(false);
     }
   }, [updateDropdownPosition]);
 
   // Debounced input handler
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      // Skip search if the update was caused by a selection
+      if (isSelectionRef.current) {
+        isSelectionRef.current = false;
+        return;
+      }
       fetchSuggestions(value);
     }, 300);
 
@@ -184,6 +191,9 @@ export function AddressAutocomplete({
   const selectPlace = useCallback((placeResult: PlaceResult) => {
     if (!placesServiceRef.current) return;
 
+    // Set selection flag to prevent search trigger
+    isSelectionRef.current = true;
+    setShowDropdown(false);
     setIsLoading(true);
 
     const request: google.maps.places.PlaceDetailsRequest = {
