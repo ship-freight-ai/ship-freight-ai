@@ -9,10 +9,10 @@ export const FooterSite = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-12">
           {/* Brand Column */}
           <div className="md:col-span-2">
-            <Link to="/site" className="flex items-center gap-3 mb-4 group">
+            <a href="https://shipfreight.ai/" className="flex items-center gap-3 mb-4 group">
               <img src={logo} alt="Ship AI" className="h-10 w-auto transition-transform group-hover:scale-105" />
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Ship AI</span>
-            </Link>
+            </a>
             <p className="text-muted-foreground mb-6 max-w-xs leading-relaxed">
               Brokerless Freight, AI-Powered. Connecting quality, insured carriers with shippers of all sizes.
             </p>
