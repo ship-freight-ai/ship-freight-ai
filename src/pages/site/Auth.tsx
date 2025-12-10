@@ -34,6 +34,18 @@ export default function SiteAuth() {
   const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Update isSignUp when URL mode parameter changes
+  useEffect(() => {
+    const newIsSignUp = mode === 'signup';
+    setIsSignUp(newIsSignUp);
+    // Reset role selection when switching modes
+    if (mode === 'login') {
+      setSelectedRole('shipper');
+    } else {
+      setSelectedRole(null);
+    }
+  }, [mode]);
+
 
   useEffect(() => {
     // Check if user is already logged in
