@@ -13,9 +13,9 @@ export const NavSite = () => {
   return <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
     <div className="container mx-auto px-8 h-20 flex items-center gap-12 relative">
       {/* Logo - Left aligned */}
-      <a href="https://shipfreight.ai/" className="flex items-center gap-3 group shrink-0">
+      <Link to="/site" className="flex items-center gap-3 group shrink-0">
         <img src={logo} alt="Ship AI" className="h-28 w-auto logo-hover" />
-      </a>
+      </Link>
 
       {/* Mobile Menu Button */}
       <Button variant="ghost" size="icon" className="lg:hidden ml-auto" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
