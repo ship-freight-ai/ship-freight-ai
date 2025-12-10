@@ -228,7 +228,7 @@ export default function SiteAuth() {
             </p>
           </motion.div>
 
-          {!selectedRole && mode === 'signup' ? (
+          {!selectedRole ? (
             <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {/* Shipper Card */}
               <motion.div
