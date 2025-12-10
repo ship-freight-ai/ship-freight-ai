@@ -9,8 +9,9 @@ import { useProfile, useUpdateProfile, useUpdateEmail, useUpdatePassword } from 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Bell, Lock } from "lucide-react";
+import { User, Bell, Lock, Settings } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters"),
@@ -96,22 +97,40 @@ export default function AppSettings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-4xl mx-auto">
-          <Skeleton className="h-12 w-48 mb-8" />
-          <Skeleton className="h-[600px] w-full" />
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-5 w-72" />
         </div>
+        <Skeleton className="h-12 w-full max-w-md" />
+        <Skeleton className="h-80 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Settings</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Settings className="w-5 h-5 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        </div>
+        <p className="text-muted-foreground">Manage your account, preferences, and notifications</p>
+      </motion.div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="profile">
               <User className="w-4 h-4 mr-2" />
               Profile
@@ -349,7 +368,7 @@ export default function AppSettings() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </motion.div>
     </div>
   );
 }
