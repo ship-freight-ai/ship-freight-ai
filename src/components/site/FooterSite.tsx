@@ -14,7 +14,7 @@ export const FooterSite = () => {
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Ship AI</span>
             </Link>
             <p className="text-muted-foreground mb-6 max-w-xs leading-relaxed">
-              Brokerless Freight, AI-Powered. Connecting enterprise shippers with carriers directly.
+              Brokerless Freight, AI-Powered. Connecting quality, insured carriers with shippers of all sizes.
             </p>
             {/* Social Links */}
             <div className="flex items-center gap-3">

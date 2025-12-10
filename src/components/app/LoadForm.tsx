@@ -136,6 +136,16 @@ const COMMODITY_OPTIONS: Record<string, Array<{ value: string; label: string; ic
     { value: "Excavators", label: "Excavators", icon: Truck },
     { value: "Bulldozers", label: "Bulldozers", icon: Truck },
   ],
+  car_carrier: [
+    { value: "Passenger Vehicles", label: "Passenger Vehicles", icon: Car },
+    { value: "SUVs & Trucks", label: "SUVs & Trucks", icon: Truck },
+    { value: "Motorcycles", label: "Motorcycles", icon: Car },
+    { value: "Classic Cars", label: "Classic Cars", icon: Car },
+    { value: "Luxury Vehicles", label: "Luxury Vehicles", icon: Car },
+    { value: "Fleet Vehicles", label: "Fleet Vehicles", icon: Car },
+    { value: "Dealer Inventory", label: "Dealer Inventory", icon: Car },
+    { value: "Auction Vehicles", label: "Auction Vehicles", icon: Car },
+  ],
 };
 
 export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadFormProps) {
@@ -559,6 +569,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                       <SelectItem value="tanker">Tanker</SelectItem>
                       <SelectItem value="box_truck">Box Truck</SelectItem>
                       <SelectItem value="power_only">Power Only</SelectItem>
+                      <SelectItem value="car_carrier">Car Carrier</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
