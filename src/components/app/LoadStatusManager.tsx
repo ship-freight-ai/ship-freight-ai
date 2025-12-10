@@ -29,8 +29,8 @@ interface LoadStatusManagerProps {
 
 const statusTransitions: Record<LoadStatus, LoadStatus[]> = {
   draft: ["posted"],
-  posted: ["bidding", "cancelled"],
-  bidding: ["booked", "cancelled"],
+  posted: ["cancelled"], // Removed "bidding" - posting is bidding. Removed manual "booked".
+  bidding: ["cancelled"], // Should not be manually selectable, but safe fallback
   booked: ["in_transit", "cancelled"],
   in_transit: ["delivered"],
   delivered: ["completed"],
