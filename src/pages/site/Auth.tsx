@@ -415,9 +415,9 @@ export default function SiteAuth() {
           <div className="text-center mt-8">
             <p className="text-sm text-muted-foreground">
               By signing up, you agree to our{" "}
-              <span className="text-accent hover:underline cursor-pointer">Terms of Service</span>
+              <span className="text-primary hover:underline cursor-pointer">Terms of Service</span>
               {" "}and{" "}
-              <span className="text-accent hover:underline cursor-pointer">Privacy Policy</span>
+              <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
             </p>
           </div>
         </div>
