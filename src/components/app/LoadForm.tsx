@@ -223,6 +223,12 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const meetsMinimum = minimumRate ? rateValue >= minimumRate : true;
 
   const onSubmit = async (data: any) => {
+    // Prevent premature submission if not on the last step
+    if (step < 4) {
+      await nextStep();
+      return;
+    }
+
     const loadData = {
       origin_address: data.origin_address,
       origin_city: data.origin_city,
