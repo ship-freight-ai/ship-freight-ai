@@ -48,13 +48,14 @@ export function AddressAutocomplete({
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
 
+
   // Update dropdown position
   const updateDropdownPosition = useCallback(() => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 4, // position: fixed is relative to viewport, no scroll offset needed
+        left: rect.left,
         width: rect.width,
       });
     }
