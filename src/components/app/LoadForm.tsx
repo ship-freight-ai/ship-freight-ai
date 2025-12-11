@@ -280,10 +280,10 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       ? ["origin_address", "origin_city", "origin_state", "origin_zip"]
       : step === 2
         ? ["destination_address", "destination_city", "destination_state", "destination_zip"]
-        : ["pickup_date", "delivery_date", "equipment_type"];
+        : ["pickup_date", "delivery_date", "equipment_type", "commodity"];
 
     const isValid = await form.trigger(fieldsToValidate as any);
-    if (isValid) setStep(step + 1);
+    if (isValid && step < 4) setStep(step + 1);
   };
 
   const commodityOptions = equipmentType && COMMODITY_OPTIONS[equipmentType as keyof typeof COMMODITY_OPTIONS] || [];
@@ -795,7 +795,15 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
             </Button>
           )}
           {step < 4 ? (
-            <Button type="button" onClick={nextStep} className="flex-1">
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                nextStep();
+              }}
+              className="flex-1"
+            >
               Next
             </Button>
           ) : (
