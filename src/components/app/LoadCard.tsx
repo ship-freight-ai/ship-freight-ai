@@ -35,19 +35,24 @@ export function LoadCard({ load }: LoadCardProps) {
 
         <div className="p-6">
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
+          <div className="flex items-start justify-between mb-4 gap-2">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <Truck className="w-4 h-4 text-primary" />
+                <Truck className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Load #{load.load_number || load.id.slice(0, 8)}
                 </span>
               </div>
-              <h3 className="font-semibold text-lg flex items-center gap-2 group-hover:text-primary transition-colors">
-                <span>{load.origin_city}, {load.origin_state}</span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span>{load.destination_city}, {load.destination_state}</span>
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 group-hover:text-primary transition-colors">
+                <span className="font-semibold text-lg truncate">
+                  {load.origin_city}, {load.origin_state}
+                </span>
+                <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0 hidden sm:block" />
+                <span className="text-muted-foreground sm:hidden text-sm">→</span>
+                <span className="font-semibold text-lg truncate">
+                  {load.destination_city}, {load.destination_state}
+                </span>
+              </div>
             </div>
             <LoadStatusBadge status={load.status} />
           </div>

@@ -75,7 +75,7 @@ export const useCreateBid = () => {
       // First, update load status to bidding if it's posted
       const { data: load } = await supabase
         .from("loads")
-        .select("status")
+        .select("status, shipper_id, origin_city, origin_state, destination_city, destination_state")
         .eq("id", bid.load_id)
         .single();
 
@@ -93,15 +93,32 @@ export const useCreateBid = () => {
         .single();
 
       if (error) throw error;
+
+      // Auto-create a chat message to start conversation with shipper
+      if (load?.shipper_id) {
+        const bidAmount = bid.bid_amount;
+        const route = `${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}`;
+        const messageContent = `Hi! I've submitted a bid of $${bidAmount.toLocaleString()} for your load (${route}). ${bid.notes ? `Notes: ${bid.notes}` : 'Let me know if you have any questions!'}`;
+
+        await supabase.from("messages").insert({
+          load_id: bid.load_id,
+          sender_id: user.id,
+          receiver_id: load.shipper_id,
+          message: messageContent,
+        });
+      }
+
       return data as Bid;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bids", data.load_id] });
       queryClient.invalidateQueries({ queryKey: ["carrier-bids"] });
       queryClient.invalidateQueries({ queryKey: ["load", data.load_id] });
+      queryClient.invalidateQueries({ queryKey: ["messages", data.load_id] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
       toast({
         title: "Success",
-        description: "Bid submitted successfully",
+        description: "Bid submitted successfully! A chat has been started with the shipper.",
       });
     },
     onError: (error) => {
@@ -152,6 +169,22 @@ export const useAcceptBid = () => {
 
   return useMutation({
     mutationFn: async ({ bidId, loadId, carrierId }: { bidId: string; loadId: string; carrierId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Get bid and load info for the message
+      const { data: bid } = await supabase
+        .from("bids")
+        .select("bid_amount")
+        .eq("id", bidId)
+        .single();
+
+      const { data: load } = await supabase
+        .from("loads")
+        .select("origin_city, origin_state, destination_city, destination_state")
+        .eq("id", loadId)
+        .single();
+
       // Accept the bid
       const { error: bidError } = await supabase
         .from("bids")
@@ -173,7 +206,7 @@ export const useAcceptBid = () => {
       // Update load status to booked and assign carrier
       const { error: loadError } = await supabase
         .from("loads")
-        .update({ 
+        .update({
           status: "booked",
           carrier_id: carrierId
         })
@@ -181,15 +214,30 @@ export const useAcceptBid = () => {
 
       if (loadError) throw loadError;
 
+      // Send congratulations message to carrier
+      if (bid && load) {
+        const route = `${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}`;
+        const messageContent = `🎉 Congratulations! Your bid of $${bid.bid_amount.toLocaleString()} has been accepted for the load (${route}). The load is now booked. Please proceed with pickup arrangements.`;
+
+        await supabase.from("messages").insert({
+          load_id: loadId,
+          sender_id: user.id,
+          receiver_id: carrierId,
+          message: messageContent,
+        });
+      }
+
       return { bidId, loadId };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bids", data.loadId] });
       queryClient.invalidateQueries({ queryKey: ["load", data.loadId] });
       queryClient.invalidateQueries({ queryKey: ["loads"] });
+      queryClient.invalidateQueries({ queryKey: ["messages", data.loadId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
       toast({
         title: "Success",
-        description: "Bid accepted! Load has been booked.",
+        description: "Bid accepted! Load has been booked and carrier notified.",
       });
     },
     onError: (error) => {
