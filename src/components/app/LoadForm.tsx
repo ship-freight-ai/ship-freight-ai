@@ -165,6 +165,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const [step, setStep] = useState(1);
   const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const createLoad = useCreateLoad();
   const updateLoad = useUpdateLoad(loadId || "");
 
@@ -268,51 +269,75 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  // Load Google Maps Script Global Loader
+  useEffect(() => {
+    const loadGoogleMaps = () => {
+      if (window.google?.maps?.DistanceMatrixService) {
+        setIsGoogleMapsLoaded(true);
+        return;
+      }
+
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.error("Google Maps API key not found");
+        return;
+      }
+
+      // Check if script is already loading
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => setIsGoogleMapsLoaded(true));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,routes`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        console.log("Google Maps loaded successfully in LoadForm");
+        setIsGoogleMapsLoaded(true);
+      };
+      script.onerror = () => {
+        console.error("Failed to load Google Maps script");
+      };
+      document.head.appendChild(script);
+    };
+
+    loadGoogleMaps();
+  }, []);
+
   // Calculate distance when addresses change
   useEffect(() => {
     let isCancelled = false;
-    let retryCount = 0;
-    const maxRetries = 10;
-
-    const waitForGoogleMaps = (): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        const checkInterval = setInterval(() => {
-          if (window.google?.maps?.DistanceMatrixService) {
-            clearInterval(checkInterval);
-            resolve();
-          } else {
-            retryCount++;
-            console.log(`Waiting for Google Maps... (attempt ${retryCount}/${maxRetries})`);
-            if (retryCount >= maxRetries) {
-              clearInterval(checkInterval);
-              reject(new Error("Google Maps failed to load"));
-            }
-          }
-        }, 500);
-      });
-    };
 
     const calculateDistance = async () => {
       // Need at least city and state for both origin and destination
       if (!originCity || !originState || !destinationCity || !destinationState) {
-        console.log("Missing address components:", { originCity, originState, destinationCity, destinationState });
+        return;
+      }
+
+      // Only calculate if Google Maps is fully loaded
+      if (!isGoogleMapsLoaded || !window.google?.maps?.DistanceMatrixService) {
         return;
       }
 
       setIsCalculatingDistance(true);
 
       try {
-        // Wait for Google Maps to load
-        await waitForGoogleMaps();
-
-        if (isCancelled) return;
-
         const service = new google.maps.DistanceMatrixService();
 
-        const origin = `${originCity}, ${originState}`;
-        const destination = `${destinationCity}, ${destinationState}`;
+        // Use full address for precision as requested: "Address, City, State Zip"
+        // Fallback to City, State if address missing (though address is required field)
+        const origin = originAddress
+          ? `${originAddress}, ${originCity}, ${originState} ${originZip}`.trim()
+          : `${originCity}, ${originState}`;
 
-        console.log("Calculating distance from:", origin, "to:", destination);
+        const destination = destinationAddress
+          ? `${destinationAddress}, ${destinationCity}, ${destinationState} ${destinationZip}`.trim()
+          : `${destinationCity}, ${destinationState}`;
+
+        console.log("Calculating detailed distance from:", origin, "to:", destination);
 
         const result = await service.getDistanceMatrix({
           origins: [origin],
@@ -322,13 +347,11 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
 
         if (isCancelled) return;
 
-        console.log("Distance Matrix result:", result);
-
         const element = result.rows[0]?.elements[0];
 
         if (element?.status === "OK" && element?.distance?.value) {
           const miles = Math.round(element.distance.value / 1609.34);
-          console.log("Calculated distance:", miles, "miles");
+          console.log("Calculated precise distance:", miles, "miles");
           setCalculatedDistance(miles);
         } else {
           console.warn("Distance calculation failed:", element?.status, result);
@@ -351,7 +374,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     return () => {
       isCancelled = true;
     };
-  }, [originCity, originState, destinationCity, destinationState]);
+  }, [originAddress, originCity, originState, originZip, destinationAddress, destinationCity, destinationState, destinationZip, isGoogleMapsLoaded]);
 
   const minimumRate = calculatedDistance ? calculatedDistance * 2 : null;
   const rateValue = postedRate ? parseFloat(postedRate) : 0;
@@ -838,9 +861,24 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 </div>
               )}
               {!calculatedDistance && !isCalculatingDistance && (
-                <p className="text-sm text-amber-600 mt-2">
-                  ⚠️ Please go back and verify addresses have city & state filled in
-                </p>
+                <div className="mt-2 text-sm text-amber-600 space-y-2">
+                  <p>⚠️ Unable to calculate distance. Check addresses.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Force a re-run by setting random state or just calling logic? 
+                      // Actually better to just toggle loading state to null to re-trigger if needed, 
+                      // but useEffect depends on props.
+                      // Let's force a reload of the maps script or check connection
+                      window.location.reload();
+                      // Simple reload is crudest but effective if script failed. 
+                      // But let's try a softer way: manually triggering the calculation logic if we extracted it.
+                    }}
+                  >
+                    Refresh Page to Retry
+                  </Button>
+                </div>
               )}
             </div>
 
