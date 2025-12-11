@@ -285,7 +285,9 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
 
   const minimumRate = calculatedDistance ? calculatedDistance * 2 : null;
   const rateValue = postedRate ? parseFloat(postedRate) : 0;
-  const meetsMinimum = minimumRate ? rateValue >= minimumRate : true;
+  // CRITICAL: meetsMinimum is FALSE when distance isn't calculated (to prevent bypass)
+  const meetsMinimum = minimumRate ? rateValue >= minimumRate : false;
+  const canSubmit = calculatedDistance !== null && meetsMinimum && rateValue > 0;
 
   const onSubmit = async (data: any) => {
     // Prevent premature submission if not on the last step
@@ -294,9 +296,19 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       return;
     }
 
+    // ENFORCE: Block submission if distance not calculated
+    if (!calculatedDistance) {
+      return;
+    }
+
     // ENFORCE minimum rate - block submission if rate is below $2/mile
     if (minimumRate && rateValue < minimumRate) {
-      return; // Button should be disabled, but this is a safety check
+      return;
+    }
+
+    // ENFORCE: Rate must be entered
+    if (!rateValue || rateValue <= 0) {
+      return;
     }
 
     const loadData = {
@@ -877,12 +889,16 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
           ) : (
             <Button
               type="submit"
-              disabled={createLoad.isPending || updateLoad.isPending || (minimumRate ? !meetsMinimum : false)}
+              disabled={createLoad.isPending || updateLoad.isPending || !canSubmit}
               className="flex-1"
             >
               {createLoad.isPending || updateLoad.isPending
                 ? (isEditing ? "Updating..." : "Creating...")
-                : (isEditing ? "Update Load" : "Create Load")}
+                : !calculatedDistance
+                  ? "Waiting for distance..."
+                  : !meetsMinimum
+                    ? "Rate below minimum"
+                    : (isEditing ? "Update Load" : "Create Load")}
             </Button>
           )}
         </div>
