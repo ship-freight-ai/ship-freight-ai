@@ -770,6 +770,39 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
         {step === 4 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Rate & Requirements</h3>
+
+            {/* Distance & Minimum Rate Info Box */}
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xl">🗺️</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-muted-foreground">Route Distance</p>
+                  {isCalculatingDistance ? (
+                    <p className="text-lg font-bold text-primary animate-pulse">Calculating...</p>
+                  ) : calculatedDistance ? (
+                    <p className="text-lg font-bold text-foreground">{calculatedDistance.toLocaleString()} miles</p>
+                  ) : (
+                    <p className="text-lg font-bold text-amber-600">Unable to calculate</p>
+                  )}
+                </div>
+              </div>
+              {calculatedDistance && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-sm font-medium">
+                    Minimum Rate Required: <span className="text-primary font-bold">${(calculatedDistance * 2).toLocaleString()}</span>
+                    <span className="text-muted-foreground ml-1">({calculatedDistance} miles × $2/mile)</span>
+                  </p>
+                </div>
+              )}
+              {!calculatedDistance && !isCalculatingDistance && (
+                <p className="text-sm text-amber-600 mt-2">
+                  ⚠️ Please go back and verify addresses have city & state filled in
+                </p>
+              )}
+            </div>
+
             <FormField
               control={form.control}
               name="posted_rate"
