@@ -270,47 +270,88 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
 
   // Calculate distance when addresses change
   useEffect(() => {
+    let isCancelled = false;
+    let retryCount = 0;
+    const maxRetries = 10;
+
+    const waitForGoogleMaps = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(() => {
+          if (window.google?.maps?.DistanceMatrixService) {
+            clearInterval(checkInterval);
+            resolve();
+          } else {
+            retryCount++;
+            console.log(`Waiting for Google Maps... (attempt ${retryCount}/${maxRetries})`);
+            if (retryCount >= maxRetries) {
+              clearInterval(checkInterval);
+              reject(new Error("Google Maps failed to load"));
+            }
+          }
+        }, 500);
+      });
+    };
+
     const calculateDistance = async () => {
       // Need at least city and state for both origin and destination
       if (!originCity || !originState || !destinationCity || !destinationState) {
-        return;
-      }
-
-      // Check if Google Maps is loaded
-      if (!window.google?.maps?.DistanceMatrixService) {
-        console.log("Google Maps not loaded yet, retrying...");
-        // Retry after a short delay
-        setTimeout(calculateDistance, 1000);
+        console.log("Missing address components:", { originCity, originState, destinationCity, destinationState });
         return;
       }
 
       setIsCalculatingDistance(true);
+
       try {
+        // Wait for Google Maps to load
+        await waitForGoogleMaps();
+
+        if (isCancelled) return;
+
         const service = new google.maps.DistanceMatrixService();
+
+        const origin = `${originCity}, ${originState}`;
+        const destination = `${destinationCity}, ${destinationState}`;
+
+        console.log("Calculating distance from:", origin, "to:", destination);
+
         const result = await service.getDistanceMatrix({
-          origins: [fullOriginAddress],
-          destinations: [fullDestinationAddress],
+          origins: [origin],
+          destinations: [destination],
           travelMode: google.maps.TravelMode.DRIVING,
         });
 
-        const distance = result.rows[0]?.elements[0]?.distance?.value;
-        if (distance) {
-          const miles = Math.round(distance / 1609.34); // Convert meters to miles
+        if (isCancelled) return;
+
+        console.log("Distance Matrix result:", result);
+
+        const element = result.rows[0]?.elements[0];
+
+        if (element?.status === "OK" && element?.distance?.value) {
+          const miles = Math.round(element.distance.value / 1609.34);
+          console.log("Calculated distance:", miles, "miles");
           setCalculatedDistance(miles);
         } else {
-          console.warn("No distance returned from Google Maps", result);
-          // Set a default if calculation fails but addresses are valid
+          console.warn("Distance calculation failed:", element?.status, result);
           setCalculatedDistance(null);
         }
       } catch (error) {
         console.error("Error calculating distance:", error);
+        if (!isCancelled) {
+          setCalculatedDistance(null);
+        }
       } finally {
-        setIsCalculatingDistance(false);
+        if (!isCancelled) {
+          setIsCalculatingDistance(false);
+        }
       }
     };
 
     calculateDistance();
-  }, [fullOriginAddress, fullDestinationAddress, originCity, originState, destinationCity, destinationState]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [originCity, originState, destinationCity, destinationState]);
 
   const minimumRate = calculatedDistance ? calculatedDistance * 2 : null;
   const rateValue = postedRate ? parseFloat(postedRate) : 0;
