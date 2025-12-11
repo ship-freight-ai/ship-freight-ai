@@ -36,7 +36,7 @@ const loadSchema = z.object({
   temperature_min: z.string().optional(),
   temperature_max: z.string().optional(),
   special_requirements: z.string().optional(),
-  posted_rate: z.string().optional(),
+  posted_rate: z.string().min(1, "Posted rate is required"),
   is_public: z.boolean().default(true),
   pickup_ref: z.string().optional(),
   requires_eld: z.boolean().default(false),

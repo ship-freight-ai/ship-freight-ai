@@ -111,24 +111,24 @@ export default function SiteHome() {
             <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10"></div>
 
             <div className="flex w-max animate-scroll">
-              <div className="flex shrink-0 items-center justify-around gap-8 min-w-full px-12">
+              <div className="flex shrink-0 items-center justify-around gap-4 min-w-full px-8">
                 {partnerLogos.map((logo, i) => (
                   <div key={`set1-${i}`} className="flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300">
                     <img
                       src={logo.logo}
                       alt={logo.name}
-                      className={`${logo.className || "h-24"} w-auto object-contain max-w-[200px]`}
+                      className={`${logo.className || "h-20"} w-auto object-contain max-w-[140px]`}
                     />
                   </div>
                 ))}
               </div>
-              <div className="flex shrink-0 items-center justify-around gap-8 min-w-full px-12">
+              <div className="flex shrink-0 items-center justify-around gap-4 min-w-full px-8">
                 {partnerLogos.map((logo, i) => (
                   <div key={`set2-${i}`} className="flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300">
                     <img
                       src={logo.logo}
                       alt={logo.name}
-                      className={`${logo.className || "h-24"} w-auto object-contain max-w-[200px]`}
+                      className={`${logo.className || "h-20"} w-auto object-contain max-w-[140px]`}
                     />
                   </div>
                 ))}
