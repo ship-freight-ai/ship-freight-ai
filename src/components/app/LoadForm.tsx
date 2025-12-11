@@ -345,22 +345,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 <FormItem>
                   <FormLabel>Street Address</FormLabel>
                   <FormControl>
-                    <AddressAutocomplete
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="123 Main St"
-                      onPlaceSelected={(place) => {
-                        form.setValue("origin_address", place.address);
-                        form.setValue("origin_city", place.city);
-                        form.setValue("origin_state", place.state);
-                        form.setValue("origin_zip", place.zip);
-                        form.setValue("origin_lat" as any, place.lat);
-                        form.setValue("origin_lng" as any, place.lng);
-                        if (place.facilityName) {
-                          form.setValue("origin_facility_name", place.facilityName);
-                        }
-                      }}
-                    />
+                    <Input placeholder="123 Main St" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -448,22 +433,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 <FormItem>
                   <FormLabel>Street Address</FormLabel>
                   <FormControl>
-                    <AddressAutocomplete
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="456 Oak Ave"
-                      onPlaceSelected={(place) => {
-                        form.setValue("destination_address", place.address);
-                        form.setValue("destination_city", place.city);
-                        form.setValue("destination_state", place.state);
-                        form.setValue("destination_zip", place.zip);
-                        form.setValue("destination_lat" as any, place.lat);
-                        form.setValue("destination_lng" as any, place.lng);
-                        if (place.facilityName) {
-                          form.setValue("destination_facility_name", place.facilityName);
-                        }
-                      }}
-                    />
+                    <Input placeholder="456 Oak Ave" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
