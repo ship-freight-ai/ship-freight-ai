@@ -200,7 +200,21 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const equipmentType = form.watch("equipment_type");
   const postedRate = form.watch("posted_rate");
   const originAddress = form.watch("origin_address");
+  const originCity = form.watch("origin_city");
+  const originState = form.watch("origin_state");
+  const originZip = form.watch("origin_zip");
   const destinationAddress = form.watch("destination_address");
+  const destinationCity = form.watch("destination_city");
+  const destinationState = form.watch("destination_state");
+  const destinationZip = form.watch("destination_zip");
+
+  // Build full address strings for distance calculation
+  const fullOriginAddress = originCity && originState
+    ? `${originAddress || ''}, ${originCity}, ${originState} ${originZip || ''}`.trim()
+    : originAddress;
+  const fullDestinationAddress = destinationCity && destinationState
+    ? `${destinationAddress || ''}, ${destinationCity}, ${destinationState} ${destinationZip || ''}`.trim()
+    : destinationAddress;
 
   // Storage key for form persistence (only for new loads, not edits)
   const STORAGE_KEY = "load_form_draft";
@@ -257,14 +271,25 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   // Calculate distance when addresses change
   useEffect(() => {
     const calculateDistance = async () => {
-      if (!originAddress || !destinationAddress || !window.google?.maps) return;
+      // Need at least city and state for both origin and destination
+      if (!originCity || !originState || !destinationCity || !destinationState) {
+        return;
+      }
+
+      // Check if Google Maps is loaded
+      if (!window.google?.maps?.DistanceMatrixService) {
+        console.log("Google Maps not loaded yet, retrying...");
+        // Retry after a short delay
+        setTimeout(calculateDistance, 1000);
+        return;
+      }
 
       setIsCalculatingDistance(true);
       try {
         const service = new google.maps.DistanceMatrixService();
         const result = await service.getDistanceMatrix({
-          origins: [originAddress],
-          destinations: [destinationAddress],
+          origins: [fullOriginAddress],
+          destinations: [fullDestinationAddress],
           travelMode: google.maps.TravelMode.DRIVING,
         });
 
@@ -272,6 +297,10 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
         if (distance) {
           const miles = Math.round(distance / 1609.34); // Convert meters to miles
           setCalculatedDistance(miles);
+        } else {
+          console.warn("No distance returned from Google Maps", result);
+          // Set a default if calculation fails but addresses are valid
+          setCalculatedDistance(null);
         }
       } catch (error) {
         console.error("Error calculating distance:", error);
@@ -281,7 +310,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     };
 
     calculateDistance();
-  }, [originAddress, destinationAddress]);
+  }, [fullOriginAddress, fullDestinationAddress, originCity, originState, destinationCity, destinationState]);
 
   const minimumRate = calculatedDistance ? calculatedDistance * 2 : null;
   const rateValue = postedRate ? parseFloat(postedRate) : 0;
