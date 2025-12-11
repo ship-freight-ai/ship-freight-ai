@@ -148,6 +148,19 @@ const COMMODITY_OPTIONS: Record<string, Array<{ value: string; label: string; ic
   ],
 };
 
+// Equipment type icons mapping
+const EQUIPMENT_ICONS: Record<string, React.ElementType> = {
+  dry_van: Package,
+  reefer: Snowflake,
+  flatbed: Hammer,
+  step_deck: Truck,
+  lowboy: Truck,
+  tanker: Droplet,
+  box_truck: Box,
+  power_only: Truck,
+  car_carrier: Car,
+};
+
 export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadFormProps) {
   const [step, setStep] = useState(1);
   const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
@@ -188,6 +201,58 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const postedRate = form.watch("posted_rate");
   const originAddress = form.watch("origin_address");
   const destinationAddress = form.watch("destination_address");
+
+  // Storage key for form persistence (only for new loads, not edits)
+  const STORAGE_KEY = "load_form_draft";
+
+  // Load saved form data on mount (only for new loads)
+  useEffect(() => {
+    if (isEditing || initialData) return;
+
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        Object.keys(parsed).forEach((key) => {
+          form.setValue(key as keyof LoadFormData, parsed[key]);
+        });
+        // Restore step if saved
+        if (parsed._step) {
+          setStep(parsed._step);
+        }
+        if (parsed._distance) {
+          setCalculatedDistance(parsed._distance);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load saved form data:", e);
+    }
+  }, [isEditing, initialData]);
+
+  // Save form data to localStorage on change (only for new loads)
+  useEffect(() => {
+    if (isEditing || initialData) return;
+
+    const subscription = form.watch((data) => {
+      try {
+        const saveData = {
+          ...data,
+          _step: step,
+          _distance: calculatedDistance,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+      } catch (e) {
+        console.error("Failed to save form data:", e);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, step, calculatedDistance, isEditing, initialData]);
+
+  // Clear localStorage on successful submission
+  const clearSavedForm = () => {
+    localStorage.removeItem(STORAGE_KEY);
+  };
 
   // Calculate distance when addresses change
   useEffect(() => {
@@ -268,6 +333,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     } else {
       createLoad.mutate(loadData as any, {
         onSuccess: () => {
+          clearSavedForm();
           form.reset();
           onSuccess?.();
         },
@@ -295,10 +361,17 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-2">
             {[1, 2, 3, 4].map((s) => (
-              <div
+              <button
                 key={s}
-                className={`h-2 w-16 rounded-full ${s <= step ? "bg-primary" : "bg-muted"
-                  }`}
+                type="button"
+                onClick={() => {
+                  // Allow clicking on completed steps or when editing
+                  if (s <= step || isEditing) {
+                    setStep(s);
+                  }
+                }}
+                className={`h-2 w-16 rounded-full transition-all ${s <= step ? "bg-primary" : "bg-muted"
+                  } ${(s <= step || isEditing) ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed"}`}
               />
             ))}
           </div>
@@ -537,15 +610,14 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="dry_van">Dry Van</SelectItem>
-                      <SelectItem value="reefer">Reefer</SelectItem>
-                      <SelectItem value="flatbed">Flatbed</SelectItem>
-                      <SelectItem value="step_deck">Step Deck</SelectItem>
-                      <SelectItem value="lowboy">Lowboy</SelectItem>
-                      <SelectItem value="tanker">Tanker</SelectItem>
-                      <SelectItem value="box_truck">Box Truck</SelectItem>
-                      <SelectItem value="power_only">Power Only</SelectItem>
-                      <SelectItem value="car_carrier">Car Carrier</SelectItem>
+                      {Object.entries(EQUIPMENT_ICONS).map(([value, Icon]) => (
+                        <SelectItem key={value} value={value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-primary" />
+                            <span>{value.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
