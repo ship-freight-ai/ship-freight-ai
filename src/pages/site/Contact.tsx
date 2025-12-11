@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { NavSite } from "@/components/site/NavSite";
 import { FooterSite } from "@/components/site/FooterSite";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, CheckCircle2 } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Loader2, Send, CheckCircle2, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+// reCAPTCHA Enterprise Site Key
+const RECAPTCHA_SITE_KEY = "6Lc_sScsAAAAAJ3NGZ0VO54XmInfSYne4W0mX3MH";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -20,28 +22,70 @@ export default function Contact() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [captchaReady, setCaptchaReady] = useState(false);
   const { toast } = useToast();
 
-  const handleCaptchaChange = (token: string | null) => {
-    setCaptchaToken(token);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!captchaToken) {
-      toast({
-        title: "Verification required",
-        description: "Please complete the reCAPTCHA verification.",
-        variant: "destructive",
-      });
+  // Load reCAPTCHA Enterprise script
+  useEffect(() => {
+    // Check if script already loaded (from Auth page)
+    if ((window as any).grecaptcha?.enterprise) {
+      setCaptchaReady(true);
       return;
     }
 
+    const existingScript = document.querySelector(`script[src*="recaptcha/enterprise"]`);
+    if (existingScript) {
+      setTimeout(() => setCaptchaReady(true), 500);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setTimeout(() => setCaptchaReady(true), 500);
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  // Execute reCAPTCHA and get token
+  const executeRecaptcha = useCallback(async (action: string): Promise<string | null> => {
+    if (!captchaReady || !(window as any).grecaptcha?.enterprise) {
+      toast({
+        variant: "destructive",
+        title: "Security Check Loading",
+        description: "Please wait a moment and try again.",
+      });
+      return null;
+    }
+
+    try {
+      const token = await (window as any).grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action });
+      return token;
+    } catch (error) {
+      console.error("reCAPTCHA execute error:", error);
+      toast({
+        variant: "destructive",
+        title: "Security Check Failed",
+        description: "Please refresh the page and try again.",
+      });
+      return null;
+    }
+  }, [captchaReady, toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Execute reCAPTCHA Enterprise
+      const token = await executeRecaptcha("contact_form");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       // Insert into Supabase
       const { error } = await supabase
         .from("contact_submissions")
@@ -65,8 +109,6 @@ export default function Contact() {
 
       // Reset form
       setFormData({ name: "", email: "", subject: "", message: "" });
-      setCaptchaToken(null);
-      recaptchaRef.current?.reset();
 
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -182,13 +224,10 @@ export default function Contact() {
                   />
                 </div>
 
-                <div className="flex justify-center pt-2">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6Lc6YCcsAAAAAMJC05VN8NV97Q4UMSBPkldmCYqZ"
-                    onChange={handleCaptchaChange}
-                    theme="dark"
-                  />
+                {/* reCAPTCHA Enterprise Badge */}
+                <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
+                  <Shield className="w-4 h-4 text-green-500" />
+                  <span>Protected by reCAPTCHA Enterprise</span>
                 </div>
 
                 <Button
@@ -218,3 +257,4 @@ export default function Contact() {
     </div>
   );
 }
+

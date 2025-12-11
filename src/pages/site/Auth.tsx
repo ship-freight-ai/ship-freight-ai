@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Truck, Eye, EyeOff, CheckCircle, AlertCircle, Building2 } from "lucide-react";
+import { Package, Truck, Eye, EyeOff, CheckCircle, AlertCircle, Building2, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import ReCAPTCHA from "react-google-recaptcha";
+
+// reCAPTCHA Enterprise Site Key
+const RECAPTCHA_SITE_KEY = "6Lc_sScsAAAAAJ3NGZ0VO54XmInfSYne4W0mX3MH";
 
 // Block common free email providers
 const PUBLIC_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com", "icloud.com", "protonmail.com"];
@@ -49,9 +51,29 @@ export default function SiteAuth() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifiedCarrier, setVerifiedCarrier] = useState<any>(null);
 
-  // reCAPTCHA State
+  // reCAPTCHA Enterprise State
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [captchaReady, setCaptchaReady] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+
+  // Load reCAPTCHA Enterprise script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setTimeout(() => setCaptchaReady(true), 500);
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      const existingScript = document.querySelector(`script[src*="recaptcha/enterprise"]`);
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
 
   // Update isSignUp when URL mode parameter changes
   useEffect(() => {
@@ -130,18 +152,44 @@ export default function SiteAuth() {
     }
   };
 
-  const handleAuth = async () => {
-    if (!captchaToken) {
+  // Execute reCAPTCHA and get token
+  const executeRecaptcha = useCallback(async (action: string): Promise<string | null> => {
+    if (!captchaReady || !(window as any).grecaptcha?.enterprise) {
       toast({
         variant: "destructive",
-        title: "Verification Required",
-        description: "Please complete the reCAPTCHA verification.",
+        title: "Security Check Loading",
+        description: "Please wait a moment and try again.",
       });
-      return;
+      return null;
     }
 
+    try {
+      const token = await (window as any).grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action });
+      return token;
+    } catch (error) {
+      console.error("reCAPTCHA execute error:", error);
+      toast({
+        variant: "destructive",
+        title: "Security Check Failed",
+        description: "Please refresh the page and try again.",
+      });
+      return null;
+    }
+  }, [captchaReady, toast]);
+
+  const handleAuth = async () => {
     setIsLoading(true);
     try {
+      // Execute reCAPTCHA Enterprise
+      const action = isSignUp ? "signup" : "login";
+      const token = await executeRecaptcha(action);
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify token with backend (optional - can also verify in signup function)
+      // For now, we'll pass the token to the signup function
       // Validate inputs
       const emailResult = emailSchema.safeParse(email);
       if (!emailResult.success) {
@@ -214,7 +262,7 @@ export default function SiteAuth() {
             fullName: fullName.trim(),
             companyName: companyName.trim(),
             role: selectedRole,
-            captchaToken: captchaToken,
+            captchaToken: token,
             carrierDetails: verifiedCarrier ? {
               dotNumber: verifiedCarrier.dotNumber,
               mcNumber: verifiedCarrier.mcNumber,
@@ -509,14 +557,10 @@ export default function SiteAuth() {
                     </>
                   )}
 
-                  {/* reCAPTCHA */}
-                  <div className="flex justify-center pt-2">
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey="6Lc6YCcsAAAAAMJC05VN8NV97Q4UMSBPkldmCYqZ"
-                      onChange={(token) => setCaptchaToken(token)}
-                      theme="dark"
-                    />
+                  {/* reCAPTCHA Enterprise Badge */}
+                  <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
+                    <Shield className="w-4 h-4 text-green-500" />
+                    <span>Protected by reCAPTCHA Enterprise</span>
                   </div>
 
                   {isSignUp && (
