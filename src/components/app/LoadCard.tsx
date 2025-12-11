@@ -43,15 +43,16 @@ export function LoadCard({ load }: LoadCardProps) {
                   Load #{load.load_number || load.id.slice(0, 8)}
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 group-hover:text-primary transition-colors">
-                <span className="font-semibold text-lg truncate">
-                  {load.origin_city}, {load.origin_state}
-                </span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0 hidden sm:block" />
-                <span className="text-muted-foreground sm:hidden text-sm">→</span>
-                <span className="font-semibold text-lg truncate">
-                  {load.destination_city}, {load.destination_state}
-                </span>
+              <div className="flex flex-col gap-1 group-hover:text-primary transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-lg">
+                    {load.origin_city}, {load.origin_state}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-semibold text-lg">
+                    {load.destination_city}, {load.destination_state}
+                  </span>
+                </div>
               </div>
             </div>
             <LoadStatusBadge status={load.status} />

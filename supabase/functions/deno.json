@@ -6,6 +6,8 @@
         ]
     },
     "imports": {
-        "std/": "https://deno.land/std@0.168.0/"
+        "std/": "https://deno.land/std@0.168.0/",
+        "https://deno.land/std@0.168.0/": "https://deno.land/std@0.168.0/",
+        "https://esm.sh/": "https://esm.sh/"
     }
 }
