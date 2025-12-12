@@ -40,7 +40,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw userError;
-    
+
     const user = userData.user;
     if (!user) throw new Error("User not authenticated");
 
@@ -87,10 +87,10 @@ serve(async (req) => {
     const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENTAGE);
     const carrierAmountCents = amountCents - platformFeeCents;
 
-    logStep("Calculated amounts", { 
-      amountCents, 
-      platformFeeCents, 
-      carrierAmountCents 
+    logStep("Calculated amounts", {
+      amountCents,
+      platformFeeCents,
+      carrierAmountCents
     });
 
     // Create transfer to carrier's Connect account
@@ -110,6 +110,46 @@ serve(async (req) => {
 
     logStep("Transfer created", { transferId: transfer.id });
 
+    // Try to create an instant payout to carrier's debit card
+    let instantPayout = null;
+    let payoutMethod = "standard"; // Will be 2-3 days if instant fails
+
+    try {
+      // Check if carrier's account supports instant payouts
+      const account = await stripe.accounts.retrieve(carrier.stripe_connect_account_id);
+
+      // Check if instant payouts are available
+      const instantAvailable = account.capabilities?.transfers === 'active';
+
+      if (instantAvailable) {
+        // Create instant payout from carrier's Connect account to their bank/card
+        instantPayout = await stripe.payouts.create(
+          {
+            amount: carrierAmountCents,
+            currency: "usd",
+            method: "instant",
+            description: `Instant payout for Load #${loadId.substring(0, 8)}`,
+            metadata: {
+              load_id: loadId,
+              payment_id: payment.id,
+            },
+          },
+          {
+            stripeAccount: carrier.stripe_connect_account_id,
+          }
+        );
+        payoutMethod = "instant";
+        logStep("Instant payout created", { payoutId: instantPayout.id });
+      } else {
+        logStep("Instant payouts not available for this carrier, using standard payout");
+      }
+    } catch (payoutError) {
+      // Instant payout failed - that's okay, standard payout will happen automatically
+      const errorMsg = payoutError instanceof Error ? payoutError.message : String(payoutError);
+      logStep("Instant payout failed, falling back to standard", { error: errorMsg });
+      // Don't throw - the transfer already happened, carrier will still get paid (just in 2-3 days)
+    }
+
     // Create payout record
     const { data: payout, error: payoutError } = await supabaseClient
       .from("carrier_payouts")
@@ -120,6 +160,8 @@ serve(async (req) => {
         platform_fee_cents: platformFeeCents,
         carrier_amount_cents: carrierAmountCents,
         stripe_transfer_id: transfer.id,
+        stripe_payout_id: instantPayout?.id || null,
+        payout_method: payoutMethod,
         status: "completed",
         completed_at: new Date().toISOString(),
       })
@@ -151,14 +193,20 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         payout,
         transfer: {
           id: transfer.id,
           amount: carrierAmountCents / 100,
           platform_fee: platformFeeCents / 100,
-        }
+        },
+        instantPayout: instantPayout ? {
+          id: instantPayout.id,
+          method: "instant",
+          arrival: "Within minutes"
+        } : null,
+        payoutMethod,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
