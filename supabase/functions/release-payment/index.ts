@@ -70,7 +70,7 @@ serve(async (req) => {
 
     const isAdmin = userRoles?.some(r => r.role === "admin");
 
-    if (load.shipper_id !== user.id || load.status !== "delivered") {
+    if (!isAdmin && (load.shipper_id !== user.id || load.status !== "delivered")) {
       throw new Error("Unauthorized or load not delivered");
     }
 
