@@ -52,6 +52,7 @@ import AppAnalytics from "./pages/app/Analytics";
 import OnboardingCheckStatus from "./pages/app/onboarding/CheckStatus";
 import OnboardingSelectPlan from "./pages/app/onboarding/SelectPlan";
 import OnboardingTrialStarted from "./pages/app/onboarding/TrialStarted";
+import CarrierOnboarding from "./pages/app/onboarding/CarrierOnboarding";
 import ClaimSeat from "./pages/app/ClaimSeat";
 
 import NotFound from "./pages/NotFound";
@@ -91,6 +92,7 @@ const App = () => (
                     <Route path="onboarding/check-status" element={<OnboardingCheckStatus />} />
                     <Route path="onboarding/select-plan" element={<OnboardingSelectPlan />} />
                     <Route path="onboarding/trial-started" element={<OnboardingTrialStarted />} />
+                    <Route path="onboarding/carrier" element={<CarrierOnboarding />} />
                     <Route path="claim-seat" element={<ClaimSeat />} />
 
                     {/* Dashboard routes - require subscription */}
