@@ -392,6 +392,13 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
         setCalculatedDistance(distance);
         setDistanceError(null);
         setShowManualDistance(false);
+
+        // Auto-set the minimum rate so it shows green by default
+        const minimumRate = distance * 2;
+        const currentRate = parseFloat(form.getValues("posted_rate") || "0");
+        if (!currentRate || currentRate < minimumRate) {
+          form.setValue("posted_rate", minimumRate.toString());
+        }
       } else {
         setCalculatedDistance(null);
         setDistanceError("Unable to calculate driving distance. You may enter it manually.");

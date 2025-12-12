@@ -6,12 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Filter, ChevronLeft, ChevronRight, Package, Search, X, SlidersHorizontal, LayoutList, Map } from "lucide-react";
+import { Plus, Filter, ChevronLeft, ChevronRight, Package, Search, X, SlidersHorizontal } from "lucide-react";
 import { useLoadsList, type LoadFilters } from "@/hooks/useLoads";
 import { LoadCard } from "@/components/app/LoadCard";
 import { LoadForm } from "@/components/app/LoadForm";
 import { BackButton } from "@/components/app/BackButton";
-import { LoadsMapView } from "@/components/app/LoadsMapView";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +21,6 @@ function AppLoadsContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<LoadFilters>({});
   const pageSize = 20;
@@ -94,28 +92,6 @@ function AppLoadsContent() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex items-center rounded-lg border bg-muted/50 p-1">
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="h-8 px-3"
-            >
-              <LayoutList className="w-4 h-4 mr-1.5" />
-              List
-            </Button>
-            <Button
-              variant={viewMode === "map" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("map")}
-              className="h-8 px-3"
-            >
-              <Map className="w-4 h-4 mr-1.5" />
-              Map
-            </Button>
-          </div>
-
           {isCarrier && (
             <Button
               variant={showFilters ? "secondary" : "outline"}
@@ -280,11 +256,9 @@ function AppLoadsContent() {
         </motion.div>
       )}
 
-      {/* Loads Grid / Map View */}
+      {/* Loads Grid */}
       <div className="space-y-6">
-        {viewMode === "map" ? (
-          <LoadsMapView loads={loads} isLoading={isLoading} />
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-48 rounded-xl bg-muted/50 animate-pulse" />
