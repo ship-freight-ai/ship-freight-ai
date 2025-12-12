@@ -87,7 +87,7 @@ export default function SiteHome() {
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-secondary animate-gradient-x">Automate Freight.</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-12 fade-in-up-delay-1 max-w-3xl mx-auto leading-relaxed">
-            Eliminate the middleman. Connect directly with shippers of all sizes and unified assets in a <span className="text-foreground font-semibold">single chaotic-free dashboard</span>.
+            Eliminate the middleman. Connect directly with shippers and asset-based carriers in a <span className="text-foreground font-semibold">single chaotic-free dashboard</span> - AI Powered
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center fade-in-up-delay-2">
             <Button variant="default" size="xl" asChild className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_-5px_rgba(124,58,237,0.4)] hover:shadow-[0_0_40px_-5px_rgba(124,58,237,0.6)] transition-all duration-300">
