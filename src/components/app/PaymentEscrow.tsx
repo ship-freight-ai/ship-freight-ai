@@ -13,8 +13,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, Lock, Unlock, AlertTriangle, CheckCircle, FileText, Clock } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { DollarSign, Lock, Unlock, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { format } from "date-fns";
 import {
   useLoadPayment,
   useReleasePayment,
@@ -155,7 +155,7 @@ export default function PaymentEscrow({
   const canDispute = (isShipper || isCarrier) && ["held_in_escrow", "released"].includes(payment.status);
   const canResolve = isAdmin && payment.status === "disputed";
 
-  const autoReleaseDate = payment.escrow_held_at ? addDays(new Date(payment.escrow_held_at), 7) : null;
+
 
   return (
     <>
@@ -217,19 +217,7 @@ export default function PaymentEscrow({
                 </div>
               </div>
 
-              {!bolDocument && autoReleaseDate && (
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-yellow-700 dark:text-yellow-300">Auto-Release Scheduled</p>
-                      <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                        Payment will automatically release on {format(autoReleaseDate, "MMM dd, yyyy")} (7 days after delivery) unless disputed.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {!bolDocument && isShipper && (
                 <div className="p-4 bg-muted rounded-lg">
