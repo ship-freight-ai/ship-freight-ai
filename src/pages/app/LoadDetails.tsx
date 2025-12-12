@@ -15,6 +15,7 @@ import { BackButton } from "@/components/app/BackButton";
 import { LoadDeleteDialog } from "@/components/app/LoadDeleteDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RatingDialog } from "@/components/app/RatingDialog";
+import { LoadRouteMap } from "@/components/app/LoadRouteMap";
 import { useLoadRating } from "@/hooks/useRatings";
 import { useGenerateLoadPDF, useDocuments } from "@/hooks/useDocuments";
 import { generateLoadConfirmationPDF, generateBOLPDF, generateInvoicePDF } from "@/utils/pdfGenerator";
@@ -356,6 +357,19 @@ function LoadDetailsContent() {
             </div>
           )}
         </Card>
+
+        {/* Route Map */}
+        <LoadRouteMap
+          originAddress={load.origin_address}
+          originCity={load.origin_city}
+          originState={load.origin_state}
+          originZip={load.origin_zip}
+          destinationAddress={load.destination_address}
+          destinationCity={load.destination_city}
+          destinationState={load.destination_state}
+          destinationZip={load.destination_zip}
+          distanceMiles={load.distance_miles}
+        />
 
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
