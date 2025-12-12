@@ -467,7 +467,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       special_requirements: data.special_requirements || null,
       posted_rate: data.posted_rate ? parseFloat(data.posted_rate) : null,
       distance_miles: calculatedDistance,
-      status: "draft" as const,
+      status: "posted" as const,
       is_public: data.is_public !== undefined ? data.is_public : true,
       pickup_ref: data.pickup_ref || null,
       requires_eld: data.requires_eld !== undefined ? data.requires_eld : false,
