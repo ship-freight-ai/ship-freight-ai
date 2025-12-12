@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { AddressAutocomplete } from "@/components/app/AddressAutocomplete";
 import { useCreateLoad, useUpdateLoad } from "@/hooks/useLoads";
 import type { Database } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Package, Snowflake, Truck, Box, Droplet, Hammer, Car, Pill, Flower2, Fish, Beef, Milk, Apple, ShoppingCart, Sofa, Zap, Wrench, Building2, Shirt, Newspaper, Wine, Cpu, Baby, Dog, Leaf, Cog, Factory, Container, CircleDollarSign } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -310,7 +311,7 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     loadGoogleMaps();
   }, []);
 
-  // Calculate distance when addresses change - with retry logic and fallbacks
+  // Calculate distance when addresses change - client-side with retry logic
   useEffect(() => {
     let isCancelled = false;
 
@@ -364,32 +365,25 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
 
       let distance: number | null = null;
 
-      // Attempt 1: Full address with zip
-      if (originAddress && destinationAddress) {
-        const fullOrigin = `${originAddress}, ${originCity}, ${originState} ${originZip}`.trim();
-        const fullDestination = `${destinationAddress}, ${destinationCity}, ${destinationState} ${destinationZip}`.trim();
-        distance = await tryDistanceCalculation(fullOrigin, fullDestination, "Attempt 1 - Full Address");
-      }
-
-      // Attempt 2: Address without zip (sometimes zip causes issues)
-      if (!distance && originAddress && destinationAddress && !isCancelled) {
-        const addressOnly = `${originAddress}, ${originCity}, ${originState}`;
-        const destAddressOnly = `${destinationAddress}, ${destinationCity}, ${destinationState}`;
-        distance = await tryDistanceCalculation(addressOnly, destAddressOnly, "Attempt 2 - No Zip");
-      }
-
-      // Attempt 3: City, State only (most reliable fallback)
-      if (!distance && !isCancelled) {
-        const cityStateOrigin = `${originCity}, ${originState}`;
-        const cityStateDest = `${destinationCity}, ${destinationState}`;
-        distance = await tryDistanceCalculation(cityStateOrigin, cityStateDest, "Attempt 3 - City/State");
-      }
-
-      // Attempt 4: City, State + USA (sometimes helps with ambiguous cities)
+      // Attempt 1: City, State + USA (most reliable)
       if (!distance && !isCancelled) {
         const withCountryOrigin = `${originCity}, ${originState}, USA`;
         const withCountryDest = `${destinationCity}, ${destinationState}, USA`;
-        distance = await tryDistanceCalculation(withCountryOrigin, withCountryDest, "Attempt 4 - With Country");
+        distance = await tryDistanceCalculation(withCountryOrigin, withCountryDest, "Attempt 1 - City/State/USA");
+      }
+
+      // Attempt 2: City, State only
+      if (!distance && !isCancelled) {
+        const cityStateOrigin = `${originCity}, ${originState}`;
+        const cityStateDest = `${destinationCity}, ${destinationState}`;
+        distance = await tryDistanceCalculation(cityStateOrigin, cityStateDest, "Attempt 2 - City/State");
+      }
+
+      // Attempt 3: Full address (if available)
+      if (!distance && originAddress && destinationAddress && !isCancelled) {
+        const fullOrigin = `${originAddress}, ${originCity}, ${originState}`;
+        const fullDestination = `${destinationAddress}, ${destinationCity}, ${destinationState}`;
+        distance = await tryDistanceCalculation(fullOrigin, fullDestination, "Attempt 3 - Full Address");
       }
 
       if (isCancelled) return;
@@ -407,8 +401,8 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
       setIsCalculatingDistance(false);
     };
 
-    // Debounce the calculation to avoid too many API calls
-    const timeoutId = setTimeout(calculateDistance, 500);
+    // Debounce the calculation
+    const timeoutId = setTimeout(calculateDistance, 600);
 
     return () => {
       isCancelled = true;
