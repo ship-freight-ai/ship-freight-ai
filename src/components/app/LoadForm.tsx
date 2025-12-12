@@ -166,6 +166,9 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
   const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [distanceError, setDistanceError] = useState<string | null>(null);
+  const [showManualDistance, setShowManualDistance] = useState(false);
+  const [manualDistance, setManualDistance] = useState<string>("");
   const createLoad = useCreateLoad();
   const updateLoad = useUpdateLoad(loadId || "");
 
@@ -307,37 +310,18 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
     loadGoogleMaps();
   }, []);
 
-  // Calculate distance when addresses change
+  // Calculate distance when addresses change - with retry logic and fallbacks
   useEffect(() => {
     let isCancelled = false;
 
-    const calculateDistance = async () => {
-      // Need at least city and state for both origin and destination
-      if (!originCity || !originState || !destinationCity || !destinationState) {
-        return;
-      }
-
-      // Only calculate if Google Maps is fully loaded
-      if (!isGoogleMapsLoaded || !window.google?.maps?.DistanceMatrixService) {
-        return;
-      }
-
-      setIsCalculatingDistance(true);
-
+    const tryDistanceCalculation = async (
+      origin: string,
+      destination: string,
+      attempt: string
+    ): Promise<number | null> => {
       try {
         const service = new google.maps.DistanceMatrixService();
-
-        // Use full address for precision as requested: "Address, City, State Zip"
-        // Fallback to City, State if address missing (though address is required field)
-        const origin = originAddress
-          ? `${originAddress}, ${originCity}, ${originState} ${originZip}`.trim()
-          : `${originCity}, ${originState}`;
-
-        const destination = destinationAddress
-          ? `${destinationAddress}, ${destinationCity}, ${destinationState} ${destinationZip}`.trim()
-          : `${destinationCity}, ${destinationState}`;
-
-        console.log("Calculating detailed distance from:", origin, "to:", destination);
+        console.log(`[Distance ${attempt}] Trying: "${origin}" → "${destination}"`);
 
         const result = await service.getDistanceMatrix({
           origins: [origin],
@@ -345,34 +329,90 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
           travelMode: google.maps.TravelMode.DRIVING,
         });
 
-        if (isCancelled) return;
-
         const element = result.rows[0]?.elements[0];
 
         if (element?.status === "OK" && element?.distance?.value) {
           const miles = Math.round(element.distance.value / 1609.34);
-          console.log("Calculated precise distance:", miles, "miles");
-          setCalculatedDistance(miles);
+          console.log(`[Distance ${attempt}] Success: ${miles} miles`);
+          return miles;
         } else {
-          console.warn("Distance calculation failed:", element?.status, result);
-          setCalculatedDistance(null);
+          console.warn(`[Distance ${attempt}] Failed with status: ${element?.status}`);
+          return null;
         }
       } catch (error) {
-        console.error("Error calculating distance:", error);
-        if (!isCancelled) {
-          setCalculatedDistance(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsCalculatingDistance(false);
-        }
+        console.error(`[Distance ${attempt}] Error:`, error);
+        return null;
       }
     };
 
-    calculateDistance();
+    const calculateDistance = async () => {
+      // Need at least city and state for both origin and destination
+      if (!originCity || !originState || !destinationCity || !destinationState) {
+        setCalculatedDistance(null);
+        setDistanceError(null);
+        return;
+      }
+
+      // Only calculate if Google Maps is fully loaded
+      if (!isGoogleMapsLoaded || !window.google?.maps?.DistanceMatrixService) {
+        console.log("[Distance] Waiting for Google Maps to load...");
+        return;
+      }
+
+      setIsCalculatingDistance(true);
+      setDistanceError(null);
+
+      let distance: number | null = null;
+
+      // Attempt 1: Full address with zip
+      if (originAddress && destinationAddress) {
+        const fullOrigin = `${originAddress}, ${originCity}, ${originState} ${originZip}`.trim();
+        const fullDestination = `${destinationAddress}, ${destinationCity}, ${destinationState} ${destinationZip}`.trim();
+        distance = await tryDistanceCalculation(fullOrigin, fullDestination, "Attempt 1 - Full Address");
+      }
+
+      // Attempt 2: Address without zip (sometimes zip causes issues)
+      if (!distance && originAddress && destinationAddress && !isCancelled) {
+        const addressOnly = `${originAddress}, ${originCity}, ${originState}`;
+        const destAddressOnly = `${destinationAddress}, ${destinationCity}, ${destinationState}`;
+        distance = await tryDistanceCalculation(addressOnly, destAddressOnly, "Attempt 2 - No Zip");
+      }
+
+      // Attempt 3: City, State only (most reliable fallback)
+      if (!distance && !isCancelled) {
+        const cityStateOrigin = `${originCity}, ${originState}`;
+        const cityStateDest = `${destinationCity}, ${destinationState}`;
+        distance = await tryDistanceCalculation(cityStateOrigin, cityStateDest, "Attempt 3 - City/State");
+      }
+
+      // Attempt 4: City, State + USA (sometimes helps with ambiguous cities)
+      if (!distance && !isCancelled) {
+        const withCountryOrigin = `${originCity}, ${originState}, USA`;
+        const withCountryDest = `${destinationCity}, ${destinationState}, USA`;
+        distance = await tryDistanceCalculation(withCountryOrigin, withCountryDest, "Attempt 4 - With Country");
+      }
+
+      if (isCancelled) return;
+
+      if (distance) {
+        setCalculatedDistance(distance);
+        setDistanceError(null);
+        setShowManualDistance(false);
+      } else {
+        setCalculatedDistance(null);
+        setDistanceError("Unable to calculate driving distance. You may enter it manually.");
+        setShowManualDistance(true);
+      }
+
+      setIsCalculatingDistance(false);
+    };
+
+    // Debounce the calculation to avoid too many API calls
+    const timeoutId = setTimeout(calculateDistance, 500);
 
     return () => {
       isCancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [originAddress, originCity, originState, originZip, destinationAddress, destinationCity, destinationState, destinationZip, isGoogleMapsLoaded]);
 
@@ -841,43 +881,77 @@ export function LoadForm({ onSuccess, initialData, loadId, isEditing }: LoadForm
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-xl">🗺️</span>
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-sm text-muted-foreground">Route Distance</p>
                   {isCalculatingDistance ? (
                     <p className="text-lg font-bold text-primary animate-pulse">Calculating...</p>
                   ) : calculatedDistance ? (
                     <p className="text-lg font-bold text-foreground">{calculatedDistance.toLocaleString()} miles</p>
+                  ) : manualDistance && parseInt(manualDistance) > 0 ? (
+                    <p className="text-lg font-bold text-foreground">{parseInt(manualDistance).toLocaleString()} miles <span className="text-xs font-normal text-muted-foreground">(manual)</span></p>
                   ) : (
-                    <p className="text-lg font-bold text-amber-600">Unable to calculate</p>
+                    <p className="text-lg font-bold text-amber-600">Enter distance below</p>
                   )}
                 </div>
               </div>
-              {calculatedDistance && (
+
+              {/* Show minimum rate when we have a distance */}
+              {(calculatedDistance || (manualDistance && parseInt(manualDistance) > 0)) && (
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-sm font-medium">
-                    Minimum Rate Required: <span className="text-primary font-bold">${(calculatedDistance * 2).toLocaleString()}</span>
-                    <span className="text-muted-foreground ml-1">({calculatedDistance} miles × $2/mile)</span>
+                    Minimum Rate Required: <span className="text-primary font-bold">${((calculatedDistance || parseInt(manualDistance)) * 2).toLocaleString()}</span>
+                    <span className="text-muted-foreground ml-1">({calculatedDistance || parseInt(manualDistance)} miles × $2/mile)</span>
                   </p>
                 </div>
               )}
+
+              {/* Manual distance input when API calculation fails */}
               {!calculatedDistance && !isCalculatingDistance && (
-                <div className="mt-2 text-sm text-amber-600 space-y-2">
-                  <p>⚠️ Unable to calculate distance. Check addresses.</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Force a re-run by setting random state or just calling logic? 
-                      // Actually better to just toggle loading state to null to re-trigger if needed, 
-                      // but useEffect depends on props.
-                      // Let's force a reload of the maps script or check connection
-                      window.location.reload();
-                      // Simple reload is crudest but effective if script failed. 
-                      // But let's try a softer way: manually triggering the calculation logic if we extracted it.
-                    }}
-                  >
-                    Refresh Page to Retry
-                  </Button>
+                <div className="mt-3 pt-3 border-t space-y-3">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-700 dark:text-amber-300 font-medium mb-1">
+                      ⚠️ {distanceError || "Unable to automatically calculate driving distance."}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Please enter the approximate driving distance between pickup and delivery locations.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      placeholder="Enter miles"
+                      value={manualDistance}
+                      onChange={(e) => {
+                        setManualDistance(e.target.value);
+                        const miles = parseInt(e.target.value);
+                        if (miles > 0) {
+                          setCalculatedDistance(miles);
+                        } else {
+                          setCalculatedDistance(null);
+                        }
+                      }}
+                      className="w-32"
+                      min="1"
+                    />
+                    <span className="text-sm text-muted-foreground">miles</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Retry distance calculation
+                        setCalculatedDistance(null);
+                        setManualDistance("");
+                        setDistanceError(null);
+                        setShowManualDistance(false);
+                      }}
+                    >
+                      Retry Auto-Calculate
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    💡 Tip: Use Google Maps to find the driving distance between your addresses.
+                  </p>
                 </div>
               )}
             </div>

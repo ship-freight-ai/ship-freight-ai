@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Payment } from "@/hooks/usePayments";
-import { DollarSign, Truck, Package, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { DollarSign, Truck, Package, AlertCircle, CheckCircle, Clock, HelpCircle, ChevronDown, ChevronUp, CreditCard, ShieldCheck, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export default function FreightPayments() {
   const { data: roleData } = useUserRole();
   const [activeTab, setActiveTab] = useState("all");
+  const [showPaymentHelp, setShowPaymentHelp] = useState(false);
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ["freight-payments"],
@@ -154,6 +155,107 @@ export default function FreightPayments() {
         </Card>
       </div>
 
+      {/* Carrier Payment Help Section */}
+      {roleData?.role === "carrier" && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader
+            className="cursor-pointer"
+            onClick={() => setShowPaymentHelp(!showPaymentHelp)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">How Carrier Payments Work</CardTitle>
+              </div>
+              {showPaymentHelp ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <CardDescription>
+              Learn about our secure escrow payment system and how you get paid
+            </CardDescription>
+          </CardHeader>
+
+          {showPaymentHelp && (
+            <CardContent className="space-y-6">
+              {/* Payment Flow */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Payment Flow
+                </h3>
+                <div className="grid gap-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-600">1</div>
+                    <div>
+                      <p className="font-medium">Bid Accepted</p>
+                      <p className="text-sm text-muted-foreground">When a shipper accepts your bid, payment is secured in escrow immediately.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-sm font-bold text-amber-600">2</div>
+                    <div>
+                      <p className="font-medium">Complete Delivery</p>
+                      <p className="text-sm text-muted-foreground">Deliver the load and upload your Proof of Delivery (POD) and Bill of Lading.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-bold text-green-600">3</div>
+                    <div>
+                      <p className="font-medium">Payment Released</p>
+                      <p className="text-sm text-muted-foreground">Once the shipper approves delivery, funds are released to your Stripe Connect account.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stripe Connect Info */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  Getting Paid via Stripe Connect
+                </h3>
+                <div className="p-4 rounded-lg border bg-background/50 space-y-2">
+                  <p className="text-sm">
+                    <span className="font-medium">Payout Timeline:</span> Funds typically arrive in your bank account within <span className="text-primary font-semibold">2-3 business days</span> after release.
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Minimum Payout:</span> No minimum - you get paid for every completed load.
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Payment Methods:</span> Direct deposit to your linked bank account.
+                  </p>
+                </div>
+              </div>
+
+              {/* Escrow Protection */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Escrow Protection
+                </h3>
+                <ul className="text-sm space-y-2 text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    <span>Funds are secured before you start driving</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    <span>If there's a dispute, funds are held until resolution</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    <span>No more chasing shippers for unpaid invoices</span>
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Payment List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -176,7 +278,7 @@ export default function FreightPayments() {
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">No payments found</p>
                 <p className="text-sm text-muted-foreground">
-                  {activeTab === "all" 
+                  {activeTab === "all"
                     ? "No payment records available"
                     : `No ${activeTab.replace(/_/g, " ")} payments`}
                 </p>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Truck, Eye, EyeOff, CheckCircle, AlertCircle, Building2, Shield } from "lucide-react";
+import { Package, Truck, Eye, EyeOff, CheckCircle, AlertCircle, Building2, Shield, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,10 @@ export default function SiteAuth() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaReady, setCaptchaReady] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+
+  // Forgot Password State
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Load reCAPTCHA Enterprise script
   useEffect(() => {
@@ -336,6 +340,50 @@ export default function SiteAuth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please enter your email address",
+      });
+      return;
+    }
+
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Email",
+        description: "Please enter a valid business email address",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+        redirectTo: `${window.location.origin}/site/auth?mode=reset`,
+      });
+
+      if (error) throw error;
+
+      setResetEmailSent(true);
+      toast({
+        title: "Reset Email Sent",
+        description: "Check your inbox for password reset instructions",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to send reset email",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <NavSite />
@@ -407,6 +455,83 @@ export default function SiteAuth() {
                 </Card>
               </motion.div>
             </div>
+          ) : showForgotPassword ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-md mx-auto"
+            >
+              <Card className="bg-white/40 dark:bg-black/40 border-black/5 dark:border-white/10 p-8 backdrop-blur-md rounded-2xl shadow-xl dark:shadow-2xl">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2">Reset Password</h2>
+                  <p className="text-muted-foreground">
+                    {resetEmailSent
+                      ? "Check your email for a password reset link"
+                      : "Enter your email address and we'll send you a reset link"}
+                  </p>
+                </div>
+
+                {resetEmailSent ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg text-center">
+                      <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                      <p className="font-medium text-green-700 dark:text-green-300">Email Sent!</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        Check your inbox for instructions to reset your password.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setResetEmailSent(false);
+                      }}
+                    >
+                      Back to Login
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email Address</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="name@company.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-white/50 dark:bg-black/50 border-black/10 dark:border-white/10 h-11"
+                      />
+                    </div>
+                    <Button
+                      className="w-full h-11"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sending...
+                        </span>
+                      ) : (
+                        "Send Reset Link"
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setShowForgotPassword(false)}
+                    >
+                      Back to Login
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </motion.div>
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -596,6 +721,16 @@ export default function SiteAuth() {
                     >
                       {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign up"}
                     </Button>
+                    {!isSignUp && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-sm text-primary"
+                      >
+                        Forgot your password?
+                      </Button>
+                    )}
                     <br />
                     <Button
                       variant="ghost"
