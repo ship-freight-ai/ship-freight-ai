@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { FileText, Download, DollarSign, Truck, ExternalLink, CheckCheck } from "lucide-react";
+import { FileText, Download, DollarSign, Truck, ExternalLink, CheckCheck, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useConversationBid } from "@/hooks/useConversationBid";
+import { useAcceptBid, useRejectBid } from "@/hooks/useBids";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
@@ -20,31 +23,73 @@ interface MessageThreadProps {
 export function MessageThread({ messages, currentUserId, loadId, otherUserId }: MessageThreadProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { data: conversationData } = useConversationBid(loadId, otherUserId);
+  const acceptBid = useAcceptBid();
+  const rejectBid = useRejectBid();
+
+  // Get current user's role
+  const { data: profile } = useQuery({
+    queryKey: ["profile-role"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+  });
+
+  const isShipper = profile?.role === "shipper";
+  const bidIsPending = conversationData?.bid?.status === "pending";
+  const canApproveBid = isShipper && bidIsPending && conversationData?.bid;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleAcceptBid = () => {
+    if (!conversationData?.bid || !loadId || !otherUserId) return;
+    acceptBid.mutate({
+      bidId: conversationData.bid.id,
+      loadId,
+      carrierId: otherUserId,
+    });
+  };
+
+  const handleRejectBid = () => {
+    if (!conversationData?.bid || !loadId) return;
+    rejectBid.mutate({ bidId: conversationData.bid.id, loadId });
+  };
+
+  const isProcessing = acceptBid.isPending || rejectBid.isPending;
 
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header with bid information */}
       {conversationData?.bid && (
-        <Card className="mb-4 bg-accent/50">
+        <Card className="m-4 mb-0 bg-accent/50 shrink-0">
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Bid Amount */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Bid Amount</p>
-                  <p className="font-semibold text-lg">
+                  <p className="font-bold text-xl">
                     ${conversationData.bid.bid_amount.toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-primary" />
+              {/* Load Info */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Truck className="h-5 w-5 text-primary" />
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Load #{conversationData.load.load_number}</p>
                   <p className="font-medium text-sm">
@@ -54,28 +99,46 @@ export function MessageThread({ messages, currentUserId, loadId, otherUserId }: 
                 </div>
               </div>
 
-              {conversationData.bid.tracking_url && (
+              {/* Status Badge */}
+              <Badge
+                variant={conversationData.bid.status === "accepted" ? "default" :
+                  conversationData.bid.status === "rejected" ? "destructive" : "secondary"}
+                className="text-sm"
+              >
+                {conversationData.bid.status}
+              </Badge>
+
+              {/* Accept/Reject Buttons for Shipper */}
+              {canApproveBid && (
                 <div className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tracking</p>
-                    <a
-                      href={conversationData.bid.tracking_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Tracking <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
+                  <Button
+                    onClick={handleAcceptBid}
+                    disabled={isProcessing}
+                    className="bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    {acceptBid.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-1" />
+                    )}
+                    Accept Bid
+                  </Button>
+                  <Button
+                    onClick={handleRejectBid}
+                    disabled={isProcessing}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    {rejectBid.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <X className="w-4 h-4 mr-1" />
+                    )}
+                    Reject
+                  </Button>
                 </div>
               )}
-
-              <div className="flex items-center gap-2">
-                <Badge variant={conversationData.bid.status === "accepted" ? "default" : "secondary"}>
-                  {conversationData.bid.status}
-                </Badge>
-              </div>
             </div>
           </CardContent>
         </Card>

@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Conversation {
@@ -45,67 +45,39 @@ export function ConversationList({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Pagination info */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {totalCount} conversation{totalCount !== 1 ? 's' : ''} total
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <span className="text-sm">Page {currentPage}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={!hasMore}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full">
       {/* Conversations list */}
-      <div className="space-y-2">
+      <div className="flex-1 space-y-2 overflow-y-auto">
         {conversations.map((conversation) => (
           <Card
             key={conversation.loadId}
             className={cn(
-              "p-4 cursor-pointer transition-all hover:shadow-md",
+              "p-3 cursor-pointer transition-all hover:shadow-md",
               selectedLoadId === conversation.loadId && "border-primary bg-primary/5"
             )}
             onClick={() => onSelectConversation(conversation.loadId, conversation.otherUserId)}
           >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">
                   Load #{conversation.load?.load_number || conversation.loadId.slice(0, 8)}
                 </h3>
-                <p className="text-xs text-muted-foreground mb-1">
+                <p className="text-xs text-muted-foreground truncate">
                   {conversation.load?.origin_city}, {conversation.load?.origin_state} →{" "}
                   {conversation.load?.destination_city}, {conversation.load?.destination_state}
                 </p>
-                <p className="text-sm text-muted-foreground line-clamp-1">
-                  {conversation.latestMessage.message}
-                </p>
               </div>
               {conversation.unreadCount > 0 && (
-                <Badge variant="default" className="ml-2">
+                <Badge variant="default" className="shrink-0">
                   {conversation.unreadCount}
                 </Badge>
               )}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
+              {conversation.latestMessage.message}
+            </p>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
                 {format(new Date(conversation.latestMessage.created_at), "MMM dd, h:mm a")}
               </span>
               <Badge variant="outline" className="text-xs">
@@ -114,6 +86,34 @@ export function ConversationList({
             </div>
           </Card>
         ))}
+      </div>
+
+      {/* Pagination at bottom */}
+      <div className="pt-4 mt-auto border-t flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground whitespace-nowrap">
+          {totalCount} total
+        </p>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="h-7 px-2 text-xs"
+          >
+            Previous
+          </Button>
+          <span className="text-xs px-2">Page {currentPage}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!hasMore}
+            className="h-7 px-2 text-xs"
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );
