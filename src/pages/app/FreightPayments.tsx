@@ -217,15 +217,22 @@ export default function FreightPayments() {
                   <CreditCard className="h-4 w-4 text-primary" />
                   Getting Paid via Stripe Connect
                 </h3>
-                <div className="p-4 rounded-lg border bg-background/50 space-y-2">
+                <div className="p-4 rounded-lg border bg-background/50 space-y-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                    <Zap className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-700 dark:text-green-400">Instant Payouts Available!</p>
+                      <p className="text-sm text-green-600 dark:text-green-500">Link a debit card in Stripe to receive payouts within <span className="font-semibold">minutes</span>, not days.</p>
+                    </div>
+                  </div>
                   <p className="text-sm">
-                    <span className="font-medium">Payout Timeline:</span> Funds typically arrive in your bank account within <span className="text-primary font-semibold">2-3 business days</span> after release.
+                    <span className="font-medium">Standard Payout:</span> Bank accounts receive funds in <span className="text-primary font-semibold">2-3 business days</span>.
                   </p>
                   <p className="text-sm">
-                    <span className="font-medium">Minimum Payout:</span> No minimum - you get paid for every completed load.
+                    <span className="font-medium">Instant Payout:</span> Debit cards receive funds in <span className="text-primary font-semibold">minutes</span>.
                   </p>
-                  <p className="text-sm">
-                    <span className="font-medium">Payment Methods:</span> Direct deposit to your linked bank account.
+                  <p className="text-sm text-muted-foreground">
+                    No minimum payout - you get paid for every completed load. Platform fee: 3%.
                   </p>
                 </div>
               </div>
