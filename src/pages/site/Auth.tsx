@@ -560,7 +560,7 @@ export default function SiteAuth() {
                           <div>
                             <h3 className="font-medium text-foreground">Verify your Authority</h3>
                             <p className="text-sm text-muted-foreground mt-1">
-                              Enter your DOT number to verify your carrier status and auto-fill your company details.
+                              Enter your MC or DOT number to verify your carrier status and auto-fill your company details.
                             </p>
                           </div>
                         </div>
@@ -568,7 +568,7 @@ export default function SiteAuth() {
 
                       <div className="flex gap-2">
                         <Input
-                          placeholder="USDOT Number"
+                          placeholder="MC or DOT Number"
                           value={dotNumber}
                           onChange={(e) => setDotNumber(e.target.value)}
                         />
