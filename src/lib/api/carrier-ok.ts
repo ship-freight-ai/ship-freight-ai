@@ -1,99 +1,175 @@
 /**
- * Mock CarrierOK API Service
+ * CarrierOK API Service
  * 
- * This simulates the CarrierOK API for testing the Velvet Rope onboarding flow.
- * Replace with real API calls when you have the production key.
+ * Handles carrier lookup by MC or DOT number.
+ * Supports both mock mode (for testing) and real API mode.
+ * 
+ * API Documentation: https://docs.carrier-ok.com/
  */
 
-export interface CarrierAddress {
+// Environment config - set CARRIER_OK_USE_MOCK=false for production
+const USE_MOCK = import.meta.env.VITE_CARRIER_OK_USE_MOCK !== 'false';
+const API_KEY = import.meta.env.VITE_CARRIER_OK_API_KEY || '';
+const API_BASE_URL = 'https://api.carrier-ok.com/v1';
+
+// ============================================
+// Types matching CarrierOK API response
+// ============================================
+
+export interface CarrierOKAddress {
     street: string;
     city: string;
     state: string;
     zip: string;
 }
 
-export interface CarrierProfile {
-    mc_number: string;
+export interface CarrierOKProfile {
+    // Identifiers
+    dot_number: string;
+    mc_number: string | null;
     legal_name: string;
-    dba_name: string;
-    address: CarrierAddress;
+    dba_name: string | null;
 
-    // The Golden Metrics for Velvet Rope validation
-    authority_status: 'ACTIVE' | 'INACTIVE';
-    original_grant_date: string; // ISO Date "YYYY-MM-DD"
-    reported_truck_count: number;
-    safety_rating: 'SATISFACTORY' | 'NONE' | 'UNSATISFACTORY';
+    // Authority info
+    authority_status: 'ACTIVE' | 'INACTIVE' | 'PENDING' | null;
+    authority_granted_date: string | null; // ISO date
+    carrier_operation: string | null; // Interstate, Intrastate
 
-    // Identity Data
-    contact_email: string;
-    contact_phone: string;
-    recent_contact_changes: boolean; // True if changed < 30 days ago (fraud risk)
-    insurance_agent_email: string; // For the fallback verification path
+    // Safety
+    safety_rating: 'SATISFACTORY' | 'UNSATISFACTORY' | 'CONDITIONAL' | 'NONE' | null;
+    safety_rating_date: string | null;
+
+    // Fleet info
+    safer_trucks: number | null;
+    safer_drivers: number | null;
+
+    // Insurance
+    insurance_type: string | null;
+    insurance_coverage_amount: number | null;
+    insurance_effective_date: string | null;
+    insurance_expiration_date: string | null;
+    insurance_policy_number: string | null;
+
+    // Contact
+    contact_email: string | null;
+    contact_phone: string | null;
+
+    // Address
+    address: CarrierOKAddress;
+
+    // Compliance
+    out_of_service: boolean;
+    out_of_service_date: string | null;
 }
 
-export interface VelvetRopeResult {
+// ============================================
+// Validation Types
+// ============================================
+
+export interface ValidationGate {
+    id: string;
+    label: string;
     passed: boolean;
-    gates: {
-        age: { passed: boolean; value: number; required: number };
-        size: { passed: boolean; value: number; required: number };
-        safety: { passed: boolean; value: string; blocked: string[] };
-        stability: { passed: boolean; value: boolean };
-    };
+    message: string;
+    value?: string | number | null;
+}
+
+export interface ValidationResult {
+    passed: boolean;
+    gates: ValidationGate[];
     failedReasons: string[];
 }
 
-/**
- * Calculate the age of carrier authority in years
- */
-function calculateAuthorityAge(grantDate: string): number {
-    const grant = new Date(grantDate);
-    const today = new Date();
-    const diffMs = today.getTime() - grant.getTime();
-    const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
-    return Math.floor(diffYears * 10) / 10; // One decimal place
-}
+// ============================================
+// Validation Logic
+// ============================================
 
-/**
- * Validate carrier against Velvet Rope criteria
- */
-export function validateVelvetRope(profile: CarrierProfile): VelvetRopeResult {
-    const authorityAge = calculateAuthorityAge(profile.original_grant_date);
+const MIN_INSURANCE_COVERAGE = 750000; // $750k minimum
 
-    const gates = {
-        age: {
-            passed: authorityAge >= 4,
-            value: authorityAge,
-            required: 4,
-        },
-        size: {
-            passed: profile.reported_truck_count >= 5,
-            value: profile.reported_truck_count,
-            required: 5,
-        },
-        safety: {
-            passed: profile.safety_rating !== 'UNSATISFACTORY',
-            value: profile.safety_rating,
-            blocked: ['UNSATISFACTORY'],
-        },
-        stability: {
-            passed: !profile.recent_contact_changes,
-            value: profile.recent_contact_changes,
-        },
-    };
-
+export function validateCarrier(profile: CarrierOKProfile): ValidationResult {
+    const gates: ValidationGate[] = [];
     const failedReasons: string[] = [];
 
-    if (!gates.age.passed) {
-        failedReasons.push(`Authority must be at least 4 years old (yours: ${authorityAge.toFixed(1)} years)`);
+    // Gate 1: Authority must be ACTIVE
+    const authorityPassed = profile.authority_status === 'ACTIVE';
+    gates.push({
+        id: 'authority',
+        label: 'Operating Authority',
+        passed: authorityPassed,
+        message: authorityPassed
+            ? `Authority is ${profile.authority_status}`
+            : `Authority is ${profile.authority_status || 'UNKNOWN'} (must be ACTIVE)`,
+        value: profile.authority_status,
+    });
+    if (!authorityPassed) {
+        failedReasons.push('Your operating authority must be ACTIVE to use our platform.');
     }
-    if (!gates.size.passed) {
-        failedReasons.push(`Carrier must have at least 5 power units (yours: ${profile.reported_truck_count})`);
+
+    // Gate 2: Insurance coverage minimum
+    const insuranceAmount = profile.insurance_coverage_amount || 0;
+    const insurancePassed = insuranceAmount >= MIN_INSURANCE_COVERAGE;
+    gates.push({
+        id: 'insurance_coverage',
+        label: 'Insurance Coverage',
+        passed: insurancePassed,
+        message: insurancePassed
+            ? `$${insuranceAmount.toLocaleString()} coverage`
+            : `$${insuranceAmount.toLocaleString()} (minimum $${(MIN_INSURANCE_COVERAGE / 1000)}k required)`,
+        value: insuranceAmount,
+    });
+    if (!insurancePassed) {
+        failedReasons.push(`Minimum insurance coverage of $${(MIN_INSURANCE_COVERAGE / 1000).toLocaleString()}k is required.`);
     }
-    if (!gates.safety.passed) {
-        failedReasons.push(`Safety rating cannot be UNSATISFACTORY (yours: ${profile.safety_rating})`);
+
+    // Gate 3: Insurance not expired
+    const today = new Date();
+    const expiryDate = profile.insurance_expiration_date
+        ? new Date(profile.insurance_expiration_date)
+        : null;
+    const insuranceActive = expiryDate ? expiryDate > today : false;
+    gates.push({
+        id: 'insurance_active',
+        label: 'Insurance Status',
+        passed: insuranceActive,
+        message: insuranceActive
+            ? `Valid until ${expiryDate?.toLocaleDateString()}`
+            : expiryDate
+                ? `Expired on ${expiryDate.toLocaleDateString()}`
+                : 'No insurance expiration date on file',
+        value: profile.insurance_expiration_date,
+    });
+    if (!insuranceActive) {
+        failedReasons.push('Your insurance must be current and not expired.');
     }
-    if (!gates.stability.passed) {
-        failedReasons.push('Contact information was changed recently (within 30 days) - this is a fraud risk indicator');
+
+    // Gate 4: Safety rating not UNSATISFACTORY
+    const safetyPassed = profile.safety_rating !== 'UNSATISFACTORY';
+    gates.push({
+        id: 'safety',
+        label: 'Safety Rating',
+        passed: safetyPassed,
+        message: safetyPassed
+            ? profile.safety_rating || 'No rating (OK)'
+            : `${profile.safety_rating} rating not acceptable`,
+        value: profile.safety_rating,
+    });
+    if (!safetyPassed) {
+        failedReasons.push('Carriers with UNSATISFACTORY safety ratings cannot use our platform.');
+    }
+
+    // Gate 5: Not out of service
+    const notOutOfService = !profile.out_of_service;
+    gates.push({
+        id: 'out_of_service',
+        label: 'Operating Status',
+        passed: notOutOfService,
+        message: notOutOfService
+            ? 'Not out of service'
+            : `Out of service since ${profile.out_of_service_date || 'unknown date'}`,
+        value: profile.out_of_service ? 'OUT OF SERVICE' : 'ACTIVE',
+    });
+    if (!notOutOfService) {
+        failedReasons.push('Your carrier is currently out of service.');
     }
 
     return {
@@ -103,183 +179,294 @@ export function validateVelvetRope(profile: CarrierProfile): VelvetRopeResult {
     };
 }
 
+// ============================================
+// API Functions
+// ============================================
+
 /**
- * Mock CarrierOK API - Lookup carrier by MC number
- * 
- * Test Cases:
- * - 777777: Elite Partner (passes all gates)
- * - 111111: Too Small (only 1 truck)
- * - 999999: Fraud Risk (recent contact changes)
- * - 222222: Too New (authority < 4 years)
- * - 333333: Unsafe (unsatisfactory rating)
+ * Normalize identifier input (MC or DOT)
  */
-export async function getCarrierProfile(mc: string): Promise<CarrierProfile> {
+export function normalizeIdentifier(input: string): { type: 'mc' | 'dot'; value: string } {
+    const cleaned = input.replace(/\s/g, '').toUpperCase();
+
+    // Check if it starts with MC or DOT prefix
+    if (cleaned.startsWith('MC-') || cleaned.startsWith('MC')) {
+        const value = cleaned.replace(/^MC-?/, '');
+        return { type: 'mc', value };
+    }
+
+    if (cleaned.startsWith('DOT-') || cleaned.startsWith('DOT')) {
+        const value = cleaned.replace(/^DOT-?/, '');
+        return { type: 'dot', value };
+    }
+
+    // Default: if it's 7+ digits, assume DOT; otherwise assume MC
+    const digits = cleaned.replace(/\D/g, '');
+    if (digits.length >= 7) {
+        return { type: 'dot', value: digits };
+    }
+
+    return { type: 'mc', value: digits };
+}
+
+/**
+ * Lookup carrier by MC or DOT number
+ */
+export async function lookupCarrier(identifier: string): Promise<CarrierOKProfile> {
+    const { type, value } = normalizeIdentifier(identifier);
+
+    if (USE_MOCK) {
+        return lookupCarrierMock(type, value);
+    }
+
+    return lookupCarrierReal(type, value);
+}
+
+/**
+ * Real API call to CarrierOK
+ */
+async function lookupCarrierReal(type: 'mc' | 'dot', value: string): Promise<CarrierOKProfile> {
+    if (!API_KEY) {
+        throw new Error('CarrierOK API key not configured');
+    }
+
+    const endpoint = type === 'mc'
+        ? `${API_BASE_URL}/profiles/mc/${value}`
+        : `${API_BASE_URL}/profiles/dot/${value}`;
+
+    const response = await fetch(endpoint, {
+        headers: {
+            'X-Api-Key': API_KEY,
+            'Accept': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error(`Carrier with ${type.toUpperCase()}-${value} not found`);
+        }
+        throw new Error(`API error: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+// ============================================
+// Mock Data for Testing
+// ============================================
+
+async function lookupCarrierMock(type: 'mc' | 'dot', value: string): Promise<CarrierOKProfile> {
     // Simulate network delay
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 800));
 
-    // Normalize MC number (remove leading zeros, spaces, etc.)
-    const normalizedMC = mc.replace(/\D/g, '');
+    const mockData = getMockCarrier(value);
+    if (!mockData) {
+        throw new Error(`Carrier with ${type.toUpperCase()}-${value} not found in FMCSA database`);
+    }
 
-    // ========================================
-    // TEST CASE 1: The "Elite Partner" (Passes All Gates)
-    // ========================================
-    if (normalizedMC === '777777') {
-        return {
+    return mockData;
+}
+
+function getMockCarrier(identifier: string): CarrierOKProfile | null {
+    const mocks: Record<string, CarrierOKProfile> = {
+        // ✅ PASS: Active, insured, safe carrier
+        '777777': {
+            dot_number: '1234567',
             mc_number: '777777',
             legal_name: 'TITAN FREIGHT SYSTEMS LLC',
             dba_name: 'Titan Logistics',
-            address: { street: '100 Main St', city: 'Dallas', state: 'TX', zip: '75001' },
             authority_status: 'ACTIVE',
-            original_grant_date: '2015-05-20', // > 4 Years ✅
-            reported_truck_count: 45,          // > 5 Trucks ✅
-            safety_rating: 'SATISFACTORY',     // Not UNSATISFACTORY ✅
+            authority_granted_date: '2018-05-20',
+            carrier_operation: 'Interstate',
+            safety_rating: 'SATISFACTORY',
+            safety_rating_date: '2022-03-15',
+            safer_trucks: 45,
+            safer_drivers: 52,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2025-12-31',
+            insurance_policy_number: 'POL-123456',
             contact_email: 'dispatch@titanfreight.com',
             contact_phone: '214-555-0100',
-            recent_contact_changes: false,     // Stable ✅
-            insurance_agent_email: 'certs@progressive.com',
-        };
-    }
+            address: { street: '100 Main St', city: 'Dallas', state: 'TX', zip: '75001' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
+        '1234567': {
+            dot_number: '1234567',
+            mc_number: '777777',
+            legal_name: 'TITAN FREIGHT SYSTEMS LLC',
+            dba_name: 'Titan Logistics',
+            authority_status: 'ACTIVE',
+            authority_granted_date: '2018-05-20',
+            carrier_operation: 'Interstate',
+            safety_rating: 'SATISFACTORY',
+            safety_rating_date: '2022-03-15',
+            safer_trucks: 45,
+            safer_drivers: 52,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2025-12-31',
+            insurance_policy_number: 'POL-123456',
+            contact_email: 'dispatch@titanfreight.com',
+            contact_phone: '214-555-0100',
+            address: { street: '100 Main St', city: 'Dallas', state: 'TX', zip: '75001' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // ========================================
-    // TEST CASE 2: The "Too Small" Carrier (Fails Size Gate)
-    // ========================================
-    if (normalizedMC === '111111') {
-        return {
+        // ✅ PASS: Small but legit carrier (owner-operator)
+        '111111': {
+            dot_number: '2345678',
             mc_number: '111111',
-            legal_name: 'SOLO TRANS INC',
-            dba_name: '',
-            address: { street: '12 Home Ln', city: 'Miami', state: 'FL', zip: '33101' },
+            legal_name: 'SOLO TRANSPORT LLC',
+            dba_name: null,
             authority_status: 'ACTIVE',
-            original_grant_date: '2018-01-01', // Age OK ✅
-            reported_truck_count: 1,           // FAIL ❌ (< 5)
+            authority_granted_date: '2022-01-15',
+            carrier_operation: 'Interstate',
             safety_rating: 'NONE',
-            contact_email: 'solo@gmail.com',
+            safety_rating_date: null,
+            safer_trucks: 1,
+            safer_drivers: 1,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 750000,
+            insurance_effective_date: '2024-06-01',
+            insurance_expiration_date: '2025-05-31',
+            insurance_policy_number: 'SOLO-789',
+            contact_email: 'john@solotransport.com',
             contact_phone: '305-555-1234',
-            recent_contact_changes: false,
-            insurance_agent_email: 'agent@geico.com',
-        };
-    }
+            address: { street: '12 Home Ln', city: 'Miami', state: 'FL', zip: '33101' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // ========================================
-    // TEST CASE 3: The "Fraud/Identity Theft" Risk (Fails Stability Gate)
-    // ========================================
-    if (normalizedMC === '999999') {
-        return {
+        // ❌ FAIL: Authority INACTIVE
+        '999999': {
+            dot_number: '9999999',
             mc_number: '999999',
-            legal_name: 'SUSPICIOUS CARRIER LLC',
-            dba_name: '',
-            address: { street: '404 Fake St', city: 'Nowhere', state: 'NV', zip: '89000' },
-            authority_status: 'ACTIVE',
-            original_grant_date: '2010-01-01', // Age OK ✅
-            reported_truck_count: 10,          // Size OK ✅
-            safety_rating: 'SATISFACTORY',     // Safety OK ✅
-            contact_email: 'hacker@scam.com',
+            legal_name: 'DEFUNCT TRUCKING INC',
+            dba_name: null,
+            authority_status: 'INACTIVE',
+            authority_granted_date: '2015-01-01',
+            carrier_operation: 'Interstate',
+            safety_rating: 'SATISFACTORY',
+            safety_rating_date: '2020-01-01',
+            safer_trucks: 10,
+            safer_drivers: 12,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2024-12-31',
+            insurance_policy_number: 'DEF-111',
+            contact_email: 'closed@defunct.com',
             contact_phone: '555-000-0000',
-            recent_contact_changes: true,      // FAIL ❌ (Changed recently)
-            insurance_agent_email: 'unknown@gmail.com',
-        };
-    }
+            address: { street: '404 Gone St', city: 'Nowhere', state: 'NV', zip: '89000' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // ========================================
-    // TEST CASE 4: The "Too New" Carrier (Fails Age Gate)
-    // ========================================
-    if (normalizedMC === '222222') {
-        return {
-            mc_number: '222222',
-            legal_name: 'NEWBIE TRUCKING LLC',
-            dba_name: 'Fresh Haul',
-            address: { street: '500 Startup Ave', city: 'Austin', state: 'TX', zip: '78701' },
+        // ❌ FAIL: Insurance expired
+        '888888': {
+            dot_number: '8888888',
+            mc_number: '888888',
+            legal_name: 'LAPSED INSURANCE LLC',
+            dba_name: null,
             authority_status: 'ACTIVE',
-            original_grant_date: '2023-06-15', // FAIL ❌ (< 4 years)
-            reported_truck_count: 8,           // Size OK ✅
-            safety_rating: 'NONE',
-            contact_email: 'dispatch@newbie.com',
-            contact_phone: '512-555-8000',
-            recent_contact_changes: false,
-            insurance_agent_email: 'agent@statefarm.com',
-        };
-    }
+            authority_granted_date: '2019-06-01',
+            carrier_operation: 'Interstate',
+            safety_rating: 'SATISFACTORY',
+            safety_rating_date: '2021-08-15',
+            safer_trucks: 8,
+            safer_drivers: 10,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2023-01-01',
+            insurance_expiration_date: '2023-12-31', // Expired!
+            insurance_policy_number: 'LAPSED-222',
+            contact_email: 'renew@lapsed.com',
+            contact_phone: '800-555-2222',
+            address: { street: '200 Overdue Ave', city: 'Chicago', state: 'IL', zip: '60601' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // ========================================
-    // TEST CASE 5: The "Unsafe" Carrier (Fails Safety Gate)
-    // ========================================
-    if (normalizedMC === '333333') {
-        return {
+        // ❌ FAIL: UNSATISFACTORY safety rating
+        '333333': {
+            dot_number: '3333333',
             mc_number: '333333',
             legal_name: 'RISKY HAULERS INC',
-            dba_name: '',
-            address: { street: '666 Danger Rd', city: 'Detroit', state: 'MI', zip: '48201' },
+            dba_name: null,
             authority_status: 'ACTIVE',
-            original_grant_date: '2012-03-10', // Age OK ✅
-            reported_truck_count: 15,          // Size OK ✅
-            safety_rating: 'UNSATISFACTORY',   // FAIL ❌
+            authority_granted_date: '2016-03-10',
+            carrier_operation: 'Interstate',
+            safety_rating: 'UNSATISFACTORY',
+            safety_rating_date: '2023-11-01',
+            safer_trucks: 15,
+            safer_drivers: 18,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2025-12-31',
+            insurance_policy_number: 'RISKY-333',
             contact_email: 'unsafe@risky.com',
             contact_phone: '313-555-6666',
-            recent_contact_changes: false,
-            insurance_agent_email: 'agent@liability.com',
-        };
-    }
+            address: { street: '666 Danger Rd', city: 'Detroit', state: 'MI', zip: '48201' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // ========================================
-    // TEST CASE 6: Inactive Authority
-    // ========================================
-    if (normalizedMC === '444444') {
-        return {
-            mc_number: '444444',
-            legal_name: 'CLOSED CARRIER LLC',
-            dba_name: '',
-            address: { street: '0 Gone St', city: 'Memphis', state: 'TN', zip: '38101' },
-            authority_status: 'INACTIVE',      // FAIL ❌
-            original_grant_date: '2010-01-01',
-            reported_truck_count: 20,
-            safety_rating: 'SATISFACTORY',
-            contact_email: 'closed@defunct.com',
-            contact_phone: '901-555-0000',
-            recent_contact_changes: false,
-            insurance_agent_email: 'none@none.com',
-        };
-    }
+        // ❌ FAIL: Low insurance coverage
+        '555555': {
+            dot_number: '5555555',
+            mc_number: '555555',
+            legal_name: 'UNDERINSURED TRANSPORT',
+            dba_name: null,
+            authority_status: 'ACTIVE',
+            authority_granted_date: '2020-07-01',
+            carrier_operation: 'Interstate',
+            safety_rating: 'NONE',
+            safety_rating_date: null,
+            safer_trucks: 3,
+            safer_drivers: 4,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 300000, // Only $300k
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2025-12-31',
+            insurance_policy_number: 'LOW-555',
+            contact_email: 'cheap@underinsured.com',
+            contact_phone: '555-555-5555',
+            address: { street: '500 Budget Blvd', city: 'Austin', state: 'TX', zip: '78701' },
+            out_of_service: false,
+            out_of_service_date: null,
+        },
 
-    // Default: Carrier not found
-    throw new Error(`Carrier with MC# ${mc} not found in FMCSA database`);
-}
+        // ❌ FAIL: Out of service
+        '666666': {
+            dot_number: '6666666',
+            mc_number: '666666',
+            legal_name: 'GROUNDED FLEET LLC',
+            dba_name: null,
+            authority_status: 'ACTIVE',
+            authority_granted_date: '2017-02-15',
+            carrier_operation: 'Interstate',
+            safety_rating: 'CONDITIONAL',
+            safety_rating_date: '2023-09-01',
+            safer_trucks: 20,
+            safer_drivers: 25,
+            insurance_type: 'Liability',
+            insurance_coverage_amount: 1000000,
+            insurance_effective_date: '2024-01-01',
+            insurance_expiration_date: '2025-12-31',
+            insurance_policy_number: 'GND-666',
+            contact_email: 'grounded@fleet.com',
+            contact_phone: '666-666-6666',
+            address: { street: '600 Parked Ln', city: 'Phoenix', state: 'AZ', zip: '85001' },
+            out_of_service: true,
+            out_of_service_date: '2024-01-15',
+        },
+    };
 
-/**
- * Mock send OTP email
- */
-export async function sendVerificationOTP(email: string): Promise<{ success: boolean; code: string }> {
-    await new Promise(r => setTimeout(r, 500));
-
-    // In production, this would actually send an email via Resend
-    // For mock, we return a fixed code for testing
-    const mockCode = '123456';
-
-    console.log(`[MOCK] OTP sent to ${email}: ${mockCode}`);
-
-    return { success: true, code: mockCode };
-}
-
-/**
- * Mock verify OTP
- */
-export async function verifyOTP(email: string, code: string): Promise<boolean> {
-    await new Promise(r => setTimeout(r, 300));
-
-    // Accept 123456 as the valid mock code
-    return code === '123456';
-}
-
-/**
- * Mock send insurance agent verification request
- */
-export async function sendInsuranceAgentRequest(
-    agentEmail: string,
-    carrierName: string
-): Promise<{ success: boolean }> {
-    await new Promise(r => setTimeout(r, 500));
-
-    console.log(`[MOCK] Insurance verification request sent to ${agentEmail} for ${carrierName}`);
-    console.log(`[MOCK] Email content: "Please reply with the COI for ${carrierName}"`);
-
-    return { success: true };
+    return mocks[identifier] || null;
 }
