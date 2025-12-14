@@ -98,6 +98,10 @@ export default function AdminDashboard() {
             <AlertCircle className="mr-2 h-4 w-4" />
             Resolve Disputes ({metrics?.active_disputes || 0})
           </Button>
+          <Button variant="outline" onClick={() => navigate("/app/admin/documents")}>
+            <Package className="mr-2 h-4 w-4" />
+            Verify Documents
+          </Button>
           <Button variant="outline" onClick={() => navigate("/app/admin/subscriptions")}>
             <DollarSign className="mr-2 h-4 w-4" />
             Manage Subscriptions

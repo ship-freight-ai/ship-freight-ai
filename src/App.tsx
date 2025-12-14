@@ -33,6 +33,7 @@ import AdminDashboard from "./pages/app/AdminDashboard";
 import AdminUserManagement from "./pages/app/admin/UserManagement";
 import AdminDisputeResolution from "./pages/app/admin/DisputeResolution";
 import AdminSubscriptionManagement from "./pages/app/admin/SubscriptionManagement";
+import AdminDocuments from "./pages/app/admin/AdminDocuments";
 import AppLoads from "./pages/app/Loads";
 import AppLoadDetails from "./pages/app/LoadDetails";
 import AppCarrierProfile from "./pages/app/CarrierProfile";
@@ -105,6 +106,7 @@ const App = () => (
                     <Route path="admin/users" element={<AdminUserManagement />} />
                     <Route path="admin/disputes" element={<AdminDisputeResolution />} />
                     <Route path="admin/subscriptions" element={<AdminSubscriptionManagement />} />
+                    <Route path="admin/documents" element={<AdminDocuments />} />
                     <Route path="admin/metrics" element={<AdminDashboard />} />
                     <Route path="admin/loads" element={<AppLoads />} />
                     <Route path="admin/payments" element={<AppBilling />} />
