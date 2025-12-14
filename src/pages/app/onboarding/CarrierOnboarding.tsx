@@ -1,8 +1,10 @@
 /**
- * Carrier Onboarding Page (Simplified 2-Step Flow)
+ * Carrier Onboarding Page (Enhanced 4-Step Flow)
  * 
- * Step 1: MC/DOT Lookup → Validation
- * Step 2: Stripe Connect → Done
+ * Step 1: Email Verification (business email)
+ * Step 2: MC/DOT Lookup → Validation
+ * Step 3: Document Upload (COI, W-9)
+ * Step 4: Stripe Connect → Done
  */
 
 import { Card } from "@/components/ui/card";
@@ -10,7 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+    Mail,
     Search,
+    FileText,
     CreditCard,
     CheckCircle,
     ArrowLeft,
@@ -18,13 +22,17 @@ import {
     Truck
 } from "lucide-react";
 import { useOnboardingStore, useOnboardingProgress } from "@/stores/useOnboardingStore";
+import { EmailVerificationStep } from "@/components/app/onboarding/EmailVerificationStep";
 import { CarrierLookupStep } from "@/components/app/onboarding/MCLookupStep";
+import { DocumentUploadStep } from "@/components/app/onboarding/DocumentUploadStep";
 import { StripeConnectStep } from "@/components/app/onboarding/StripeConnectStep";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 const steps = [
+    { id: 'email_verification', label: 'Email', icon: Mail },
     { id: 'lookup', label: 'Verify Carrier', icon: Search },
+    { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'bank_connection', label: 'Bank Setup', icon: CreditCard },
 ];
 
@@ -106,20 +114,20 @@ export default function CarrierOnboarding() {
                             <div>
                                 <h1 className="text-xl font-bold">Carrier Verification</h1>
                                 <p className="text-sm text-muted-foreground">
-                                    Quick 2-step verification to start hauling
+                                    4-step verification to start hauling
                                 </p>
                             </div>
                         </div>
                         {validationResult?.passed && (
                             <Badge className="bg-green-600">
                                 <CheckCircle className="w-3 h-3 mr-1" />
-                                Verified
+                                Carrier Verified
                             </Badge>
                         )}
                     </div>
 
                     {/* Progress Steps */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         {steps.map((step, index) => {
                             const Icon = step.icon;
                             const isActive = step.id === currentStep;
@@ -127,30 +135,30 @@ export default function CarrierOnboarding() {
 
                             return (
                                 <div key={step.id} className="flex items-center flex-1">
-                                    <div className={`flex items-center gap-2 p-3 rounded-lg transition-colors flex-1 ${isActive
-                                            ? 'bg-primary text-primary-foreground'
-                                            : isCompleted
-                                                ? 'bg-green-500/10 text-green-600'
-                                                : 'bg-muted text-muted-foreground'
+                                    <div className={`flex items-center gap-2 p-2 rounded-lg transition-colors flex-1 ${isActive
+                                        ? 'bg-primary text-primary-foreground'
+                                        : isCompleted
+                                            ? 'bg-green-500/10 text-green-600'
+                                            : 'bg-muted text-muted-foreground'
                                         }`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isActive
-                                                ? 'bg-primary-foreground/20'
-                                                : isCompleted
-                                                    ? 'bg-green-500/20'
-                                                    : 'bg-muted-foreground/10'
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isActive
+                                            ? 'bg-primary-foreground/20'
+                                            : isCompleted
+                                                ? 'bg-green-500/20'
+                                                : 'bg-muted-foreground/10'
                                             }`}>
                                             {isCompleted ? (
-                                                <CheckCircle className="w-4 h-4" />
+                                                <CheckCircle className="w-3.5 h-3.5" />
                                             ) : (
-                                                <Icon className="w-4 h-4" />
+                                                <Icon className="w-3.5 h-3.5" />
                                             )}
                                         </div>
-                                        <span className="text-sm font-medium">
+                                        <span className="text-xs font-medium hidden sm:inline">
                                             {step.label}
                                         </span>
                                     </div>
                                     {index < steps.length - 1 && (
-                                        <div className={`h-0.5 w-8 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-muted'
+                                        <div className={`h-0.5 w-4 mx-1 ${isCompleted ? 'bg-green-500' : 'bg-muted'
                                             }`} />
                                     )}
                                 </div>
@@ -165,7 +173,9 @@ export default function CarrierOnboarding() {
 
             {/* Content */}
             <div className="max-w-3xl mx-auto px-8 py-8">
+                {currentStep === 'email_verification' && <EmailVerificationStep />}
                 {currentStep === 'lookup' && <CarrierLookupStep />}
+                {currentStep === 'documents' && <DocumentUploadStep />}
                 {currentStep === 'bank_connection' && <StripeConnectStep />}
             </div>
         </div>

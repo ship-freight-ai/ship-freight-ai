@@ -4,6 +4,8 @@ import { ROICalculator } from "@/components/site/ROICalculator";
 import { TruckingAIDemo } from "@/components/site/TruckingAIDemo";
 import { FeaturesShowcase } from "@/components/site/FeaturesShowcase";
 import { HowItWorksSection } from "@/components/site/HowItWorksSection";
+import { CompetitionComparison } from "@/components/site/CompetitionComparison";
+import { HaulingForSection } from "@/components/site/HaulingForSection";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,15 +47,44 @@ export default function SiteHome() {
       return;
     }
 
-    // TODO: Integrate with Supabase newsletter_subscribers table
-    setTimeout(() => {
-      setIsSuccess(true);
-      setIsSubmitting(false);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscribe-newsletter`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ email, source: "home" }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsSuccess(true);
+        toast({
+          title: "Success!",
+          description: data.message || "You've been added to our newsletter."
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to subscribe. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
       toast({
-        title: "Success!",
-        description: "You've been added to our newsletter."
+        title: "Error",
+        description: "Failed to subscribe. Please try again later.",
+        variant: "destructive"
       });
-    }, 1000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   return <div className="min-h-screen">
     <NavSite />
@@ -139,7 +170,13 @@ export default function SiteHome() {
       </div>
     </section>
 
+    {/* Hauling For - Social Proof */}
+    <HaulingForSection />
+
     <FeaturesShowcase />
+
+    {/* Competition Comparison */}
+    <CompetitionComparison />
 
     <HowItWorksSection />
 

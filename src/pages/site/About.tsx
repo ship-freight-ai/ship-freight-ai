@@ -38,7 +38,7 @@ export default function SiteAbout() {
     };
 
     const timer1 = animateCounter(setTotalSaved, 2400000, 2000);
-    const timer2 = animateCounter(setCarriersConnected, 1250, 2000);
+    const timer2 = animateCounter(setCarriersConnected, 5000, 2000);
     const timer3 = animateCounter(setLoadsMoved, 8500, 2000);
 
     return () => {
@@ -62,14 +62,44 @@ export default function SiteAbout() {
       return;
     }
 
-    setTimeout(() => {
-      setIsSuccess(true);
-      setIsSubmitting(false);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscribe-newsletter`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ email, source: "about" }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsSuccess(true);
+        toast({
+          title: "Success!",
+          description: data.message || "You've been added to our newsletter.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to subscribe. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
       toast({
-        title: "Success!",
-        description: "You've been added to our newsletter.",
+        title: "Error",
+        description: "Failed to subscribe. Please try again later.",
+        variant: "destructive",
       });
-    }, 1000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -189,7 +219,7 @@ export default function SiteAbout() {
               <Target className="w-12 h-12 text-accent mb-4 mx-auto" />
               <h2 className="text-3xl font-bold mb-4 text-center">Our Mission</h2>
               <p className="text-lg text-muted-foreground text-center leading-relaxed">
-                To connect shippers and carriers directly, eliminating broker markups and using AI to automate operations. 
+                To connect shippers and carriers directly, eliminating broker markups and using AI to automate operations.
                 We believe freight should be <strong className="text-foreground">cheaper</strong>, <strong className="text-foreground">clearer</strong>, and <strong className="text-foreground">fairer</strong> for everyone.
               </p>
             </Card>
@@ -206,7 +236,7 @@ export default function SiteAbout() {
                 <div>
                   <h3 className="text-xl font-bold mb-2">The Problem</h3>
                   <p className="text-muted-foreground">
-                    The freight industry is broken. Brokers take 15-60% cuts while adding little value. Carriers struggle with cash flow. 
+                    The freight industry is broken. Brokers take 15-60% cuts while adding little value. Carriers struggle with cash flow.
                     Shippers overpay and lack transparency. Phone calls, emails, and paperwork slow everything down.
                   </p>
                 </div>
@@ -223,7 +253,7 @@ export default function SiteAbout() {
                 <div>
                   <h3 className="text-xl font-bold mb-2">The Solution</h3>
                   <p className="text-muted-foreground">
-                    Ship AI changes this. We give shippers direct access to verified carriers. We use AI to automate followups, documentation, 
+                    Ship AI changes this. We give shippers direct access to verified carriers. We use AI to automate followups, documentation,
                     and status updates. We hold payments in escrow and release them fast after proof of delivery. <strong className="text-foreground">No middleman, no markups, no waiting.</strong>
                   </p>
                 </div>
